@@ -1,4 +1,5 @@
 import { useState, useEffect } from "react";
+import { supabase } from './supabase'
 
 /* ── Google Fonts ── */
 const FontInjector = () => {
@@ -615,7 +616,7 @@ function Home({ userState, userCity, onBusiness, onTab, favorites, toggleFav, on
             border:`1.5px solid ${showFilters ? "#C9A84C" : "rgba(255,255,255,0.22)"}`,
             display:"flex", alignItems:"center", justifyContent:"center",
             cursor:"pointer" }}>
-            <span style={{ fontSize:18 }}>⚙️</span>
+            <span style={{ fontSize:18 }}>🔽</span>
             {activeFilterCount>0 && (
               <div style={{ position:"absolute", top:-4, right:-4, width:16, height:16,
                 borderRadius:"50%", background:"#C9A84C", border:"2px solid white",
@@ -644,23 +645,13 @@ function Home({ userState, userCity, onBusiness, onTab, favorites, toggleFav, on
                 fontSize:13, color:filterState ? C.red : C.textMute,
                 outline:"none", fontWeight: filterState ? 700 : 400 }}>
               <option value="">Tüm eyaletler</option>
-              {[...new Set(businesses.map(b=>b.state))].sort().map(s=>(
+              {US_STATES.map(s=>(
                 <option key={s} value={s}>{s}</option>
               ))}
             </select>
           </div>
 
-          {/* Şehir */}
-          <div style={{ marginBottom:12 }}>
-            <div style={{ fontSize:10, fontWeight:700, color:C.textMute,
-              letterSpacing:1.5, textTransform:"uppercase", marginBottom:6 }}>Şehir</div>
-            <input value={filterCity} onChange={e=>setFilterCity(e.target.value)}
-              placeholder="örn. Brooklyn, Paterson..."
-              style={{ width:"100%", boxSizing:"border-box", padding:"9px 12px", borderRadius:10,
-                border:`1.5px solid ${filterCity ? C.red : C.border}`,
-                background:filterCity ? C.redLight : C.redPale,
-                fontSize:13, color:C.text, outline:"none" }}/>
-          </div>
+        
 
           {/* Sıralama */}
           <div style={{ marginBottom:12 }}>
@@ -1494,25 +1485,14 @@ function RegisterBusiness({ onBack, onSuccess }) {
             <Field label="Açık Adres" value={form.address}
               onChange={v=>set("address",v)} placeholder="Sokak, No, Daire" required/>
 
-            <div style={{ display:"flex", gap:10, marginBottom:14 }}>
-              <div style={{ flex:2 }}>
-                <div style={{ fontSize:11, fontWeight:700, color:C.textSub,
-                  letterSpacing:0.5, marginBottom:6 }}>Şehir <span style={{ color:C.red }}>*</span></div>
-                <input value={form.city} onChange={e=>set("city",e.target.value)}
-                  placeholder="Brooklyn"
-                  style={{ width:"100%", boxSizing:"border-box", padding:"11px 14px",
-                    borderRadius:11, border:`1.5px solid ${C.border}`,
-                    background:C.redPale, fontSize:14, color:C.text, outline:"none" }}/>
-              </div>
-              <div style={{ flex:1 }}>
-                <div style={{ fontSize:11, fontWeight:700, color:C.textSub,
-                  letterSpacing:0.5, marginBottom:6 }}>ZIP</div>
-                <input value={form.zip} onChange={e=>set("zip",e.target.value)}
-                  placeholder="10001"
-                  style={{ width:"100%", boxSizing:"border-box", padding:"11px 14px",
-                    borderRadius:11, border:`1.5px solid ${C.border}`,
-                    background:C.redPale, fontSize:14, color:C.text, outline:"none" }}/>
-              </div>
+            <div style={{ marginBottom:14 }}>
+              <div style={{ fontSize:11, fontWeight:700, color:C.textSub,
+                letterSpacing:0.5, marginBottom:6 }}>ZIP</div>
+              <input value={form.zip} onChange={e=>set("zip",e.target.value)}
+                placeholder="10001"
+                style={{ width:"100%", boxSizing:"border-box", padding:"11px 14px",
+                  borderRadius:11, border:`1.5px solid ${C.border}`,
+                  background:C.redPale, fontSize:14, color:C.text, outline:"none" }}/>
             </div>
 
             <div style={{ marginBottom:14 }}>
@@ -1665,7 +1645,22 @@ function RegisterBusiness({ onBack, onSuccess }) {
               Devam Et →
             </button>
           ) : (
-            <button onClick={()=>setSubmitted(true)} style={{ flex:2, border:"none",
+            <button onClick={async ()=>{
+  const { data: { user } } = await supabase.auth.getUser();
+  await supabase.from("events").insert({
+    title: form.title,
+    org: form.org,
+    date: form.date,
+    location: form.location,
+    state: form.state,
+    category: form.cat,
+    description: form.description,
+    free: form.free,
+    price: form.price,
+    owner_id: user?.id || null,
+  });
+  setSubmitted(true);
+}} style={{ flex:2, border:"none",
               borderRadius:13, padding:"14px", fontSize:14, fontWeight:700, cursor:"pointer",
               background:`linear-gradient(135deg,${C.red},${C.redDark})`, color:C.white }}>
               🧭 Yayına Al
@@ -1872,7 +1867,7 @@ function ProfilePage({ userProfile, onEdit, favorites, onBusiness, loggedIn, onL
             <NotifPrefs/>
 
             {/* Admin erişimi (gizli — sadece gösterim amaçlı) */}
-            <div onClick={onAdmin} style={{ background:C.white,
+            {userProfile.email==="myazici7@gmail.com" && <div onClick={onAdmin} style={{ background:C.white,
               border:`1px solid ${C.border}`, borderRadius:13, padding:"13px 16px",
               marginBottom:12, display:"flex", alignItems:"center", gap:12,
               cursor:"pointer" }}>
@@ -1884,7 +1879,7 @@ function ProfilePage({ userProfile, onEdit, favorites, onBusiness, loggedIn, onL
                 <div style={{ fontSize:11, color:C.textMute }}>İşletme onay yönetimi</div>
               </div>
               <div style={{ fontSize:12, color:C.textMute }}>→</div>
-            </div>
+            </div>}
 
             {/* İşletme ekle butonu */}
             <div onClick={onRegisterBiz} style={{ border:`2px dashed #F59E0B`,
@@ -2695,19 +2690,50 @@ function AuthScreen({ onAuth, onBack }) {
   const [error, setError] = useState("");
   const set = (k,v) => setForm(f=>({...f,[k]:v}));
 
-  const handleSubmit = () => {
+  const handleSubmit = async () => {
     if (!form.email || !form.password) { setError("E-posta ve şifre zorunludur."); return; }
     if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(form.email)) { setError("Geçerli bir e-posta adresi girin."); return; }
     if (mode==="signup" && !form.name) { setError("Ad soyad zorunludur."); return; }
     if (form.password.length < 6) { setError("Şifre en az 6 karakter olmalıdır."); return; }
     setError("");
-    onAuth({
-      name: form.name || form.email.split("@")[0],
-      email: form.email,
-      avatar:"👤",
-      state: form.state,
-      city:"", phone:"", reviewCount:0, bizCount:0,
-    });
+
+    if (mode==="signup") {
+      const { data, error } = await supabase.auth.signUp({
+        email: form.email,
+        password: form.password,
+      });
+      if (error) { setError(error.message); return; }
+      await supabase.from("profiles").insert({
+        id: data.user.id,
+        name: form.name,
+        email: form.email,
+        state: form.state,
+        city: "",
+        avatar: "👤",
+      });
+      onAuth({
+        name: form.name,
+        email: form.email,
+        avatar: "👤",
+        state: form.state,
+        city: "", phone: "", reviewCount: 0, bizCount: 0,
+      });
+    } else {
+      const { data, error } = await supabase.auth.signInWithPassword({
+        email: form.email,
+        password: form.password,
+      });
+      if (error) { setError("E-posta veya şifre hatalı."); return; }
+      const { data: profile } = await supabase.from("profiles").select("*").eq("id", data.user.id).single();
+      onAuth({
+        name: profile?.name || form.email.split("@")[0],
+        email: form.email,
+        avatar: profile?.avatar || "👤",
+        state: profile?.state || "",
+        city: profile?.city || "",
+        phone: "", reviewCount: 0, bizCount: 0,
+      });
+    }
   };
 
   return (
@@ -2902,9 +2928,8 @@ function PostJob({ onBack, onSuccess, userName }) {
 
       <div style={{ flex:1, overflowY:"auto", padding:"20px" }}>
         {[
-          { key:"title",   label:"İlan Başlığı *",     placeholder:"Türkçe Satış Temsilcisi"       },
-          { key:"company", label:"Firma / Kurum *",     placeholder:"Şirket adınız"                 },
-          { key:"location",label:"Şehir *",             placeholder:"Brooklyn, NY"                  },
+          { key:"title",   label:"İlan Başlığı *", placeholder:"Türkçe Satış Temsilcisi" },
+          { key:"company", label:"Firma / Kurum *", placeholder:"Şirket adınız"          },
         ].map(f=>(
           <div key={f.key} style={{ marginBottom:14 }}>
             <div style={{ fontSize:11, fontWeight:700, color:C.textSub,
@@ -2917,6 +2942,8 @@ function PostJob({ onBack, onSuccess, userName }) {
           </div>
         ))}
 
+       
+
         {/* Eyalet */}
         <div style={{ marginBottom:14 }}>
           <div style={{ fontSize:11, fontWeight:700, color:C.textSub,
@@ -2928,6 +2955,19 @@ function PostJob({ onBack, onSuccess, userName }) {
             <option value="">Seçin...</option>
             {US_STATES.map(s=><option key={s} value={s}>{s}</option>)}
           </select>
+        </div>
+
+         {/* Şehir */}
+        <div style={{ marginBottom:14 }}>
+          <div style={{ fontSize:11, fontWeight:700, color:C.textSub,
+            letterSpacing:0.5, marginBottom:6 }}>Şehir *</div>
+          <input value={form.location} onChange={e=>set("location",e.target.value)}
+            placeholder={form.state ? `${form.state} şehrini girin` : "Önce eyalet seçin"}
+            disabled={!form.state}
+            style={{ width:"100%", boxSizing:"border-box", padding:"11px 14px",
+              borderRadius:11, border:`1.5px solid ${C.border}`,
+              background: form.state ? C.redPale : "#F0F0F0",
+              fontSize:14, color:C.text, outline:"none" }}/>
         </div>
 
         {/* Çalışma tipi */}
@@ -2983,7 +3023,22 @@ function PostJob({ onBack, onSuccess, userName }) {
 
       <div style={{ padding:"12px 20px 32px", background:C.white,
         borderTop:`1px solid ${C.border}` }}>
-        <button onClick={()=>canSubmit&&setSubmitted(true)} style={{ width:"100%",
+        <button onClick={async()=>{ if(!canSubmit) return;
+  const { data: { user } } = await supabase.auth.getUser();
+  await supabase.from("events").insert({
+    title: form.title,
+    org: form.org,
+    date: form.date,
+    location: form.location,
+    state: form.state,
+    category: form.cat,
+    description: form.description,
+    free: form.free,
+    price: form.price,
+    owner_id: user?.id || null,
+  });
+  setSubmitted(true);
+}} style={{ width:"100%",
           border:"none", borderRadius:13, padding:"14px", fontSize:14, fontWeight:700,
           cursor:canSubmit?"pointer":"default",
           background: canSubmit
@@ -3098,10 +3153,8 @@ function PostEvent({ onBack, onSuccess }) {
 
       <div style={{ flex:1, overflowY:"auto", padding:"20px" }}>
         {[
-          { key:"title",    label:"Etkinlik Adı *",     placeholder:"Türk Film Festivali"      },
-          { key:"org",      label:"Organizatör *",       placeholder:"Dernek / Kurum adı"       },
-          { key:"date",     label:"Tarih *",             placeholder:"15 Kasım 2026"            },
-          { key:"location", label:"Mekan / Adres *",     placeholder:"Brooklyn, NY"             },
+          { key:"title", label:"Etkinlik Adı *", placeholder:"Türk Film Festivali" },
+          { key:"org",   label:"Organizatör *",  placeholder:"Dernek / Kurum adı"  },
         ].map(f=>(
           <div key={f.key} style={{ marginBottom:14 }}>
             <div style={{ fontSize:11, fontWeight:700, color:C.textSub,
@@ -3113,6 +3166,28 @@ function PostEvent({ onBack, onSuccess }) {
                 background:C.redPale, fontSize:14, color:C.text, outline:"none" }}/>
           </div>
         ))}
+
+        {/* Tarih */}
+        <div style={{ marginBottom:14 }}>
+          <div style={{ fontSize:11, fontWeight:700, color:C.textSub,
+            letterSpacing:0.5, marginBottom:6 }}>Tarih *</div>
+          <input type="date" value={form.date} onChange={e=>set("date",e.target.value)}
+            min={new Date().toISOString().split("T")[0]}
+            style={{ width:"100%", boxSizing:"border-box", padding:"11px 14px",
+              borderRadius:11, border:`1.5px solid ${C.border}`,
+              background:C.redPale, fontSize:14, color:C.text, outline:"none" }}/>
+        </div>
+
+        {/* Mekan */}
+        <div style={{ marginBottom:14 }}>
+          <div style={{ fontSize:11, fontWeight:700, color:C.textSub,
+            letterSpacing:0.5, marginBottom:6 }}>Mekan / Adres *</div>
+          <input value={form.location} onChange={e=>set("location",e.target.value)}
+            placeholder="örn. 143 Atlantic Ave, Brooklyn"
+            style={{ width:"100%", boxSizing:"border-box", padding:"11px 14px",
+              borderRadius:11, border:`1.5px solid ${C.border}`,
+              background:C.redPale, fontSize:14, color:C.text, outline:"none" }}/>
+        </div>
 
         {/* Eyalet */}
         <div style={{ marginBottom:14 }}>
@@ -3181,7 +3256,22 @@ function PostEvent({ onBack, onSuccess }) {
 
       <div style={{ padding:"12px 20px 32px", background:C.white,
         borderTop:`1px solid ${C.border}` }}>
-        <button onClick={()=>canSubmit&&setSubmitted(true)} style={{ width:"100%",
+        <button onClick={async()=>{ if(!canSubmit) return;
+  const { data: { user } } = await supabase.auth.getUser();
+  await supabase.from("events").insert({
+    title: form.title,
+    org: form.org,
+    date: form.date,
+    location: form.location,
+    state: form.state,
+    category: form.cat,
+    description: form.description,
+    free: form.free,
+    price: form.price,
+    owner_id: user?.id || null,
+  });
+  setSubmitted(true);
+}} style={{ width:"100%",
           border:"none", borderRadius:13, padding:"14px", fontSize:14, fontWeight:700,
           cursor:canSubmit?"pointer":"default",
           background: canSubmit
@@ -3465,26 +3555,21 @@ function LocationModal({ currentState, currentCity, onSave, onClose }) {
           borderBottom:`1px solid ${C.border}` }}>
           <div style={{ display:"flex", alignItems:"center", justifyContent:"space-between" }}>
             <div style={{ fontSize:16, fontWeight:700, color:C.text }}>
-              {step==="state" ? "Eyalet Seç" : "Şehir Seç"}
+              Eyalet Seç
             </div>
             <div onClick={onClose} style={{ fontSize:20, color:C.textMute, cursor:"pointer" }}>✕</div>
           </div>
           {/* Step indicator */}
           <div style={{ display:"flex", gap:6, marginTop:10 }}>
-            {["state","city"].map((s,i)=>(
-              <div key={s} onClick={()=>{ if(s==="state"||selState) setStep(s); }}
+            {["state"].map((s,i)=>(
+              <div key={s}
                 style={{ display:"flex", alignItems:"center", gap:6,
-                  padding:"5px 12px", borderRadius:20, cursor:"pointer",
-                  background:step===s?C.red:C.redPale,
-                  border:`1px solid ${step===s?C.red:C.border}` }}>
-                <span style={{ fontSize:11, fontWeight:700,
-                  color:step===s?C.white:C.textSub }}>
-                  {i+1}. {s==="state"?"Eyalet":"Şehir"}
+                  padding:"5px 12px", borderRadius:20,
+                  background:C.red, border:`1px solid ${C.red}` }}>
+                <span style={{ fontSize:11, fontWeight:700, color:C.white }}>
+                  Eyalet
                 </span>
-                {s==="state"&&selState&&<span style={{ fontSize:10,
-                  color:step==="state"?C.white:C.red, fontWeight:700 }}>{selState}</span>}
-                {s==="city"&&selCity&&<span style={{ fontSize:10,
-                  color:step==="city"?C.white:C.red, fontWeight:700 }}>{selCity}</span>}
+                {selState&&<span style={{ fontSize:10, color:C.white, fontWeight:700 }}>{selState}</span>}
               </div>
             ))}
           </div>
@@ -3964,7 +4049,17 @@ export default function PusulaApp() {
     setFavorites(prev => prev.includes(id) ? prev.filter(x=>x!==id) : [...prev,id]);
 
   // FIX 7: Yorum bildirimi işletme adını gösteriyor
-  const addReview = r => {
+  const addReview = async r => {
+    const { data: { user } } = await supabase.auth.getUser();
+
+    await supabase.from("reviews").insert({
+      business_id: r.bizId,
+      user_id: user?.id || null,
+      user_name: r.user,
+      rating: r.rating,
+      comment: r.text,
+    });
+
     setReviews(prev=>[r,...prev]);
     setUserProfile(p=>({...p, reviewCount:(p.reviewCount||0)+1}));
     const biz = businesses.find(b=>b.id===r.bizId);
@@ -4009,14 +4104,27 @@ export default function PusulaApp() {
   };
 
   // FIX 4: Yeni ilan dinamik listeye ekleniyor
-  const addJob = (form) => {
+  const addJob = async (form) => {
+    const { data: { user } } = await supabase.auth.getUser();
+
+    const { data } = await supabase.from("jobs").insert({
+      title: form.title,
+      company: form.company,
+      location: `${form.location}, ${form.state}`,
+      state: form.state,
+      type: form.type,
+      phone: form.phone,
+      description: form.description,
+      tags: form.tags ? form.tags.split(",").map(t=>t.trim()).filter(Boolean) : [],
+      owner_id: user?.id || null,
+    }).select().single();
+
     const newJob = {
-      id: Date.now(),
+      id: data?.id || Date.now(),
       title: form.title,
       company: form.company,
       location: `${form.location}, ${form.state}`,
       type: form.type,
-      salary: form.salaryMin && form.salaryMax ? `$${form.salaryMin}–$${form.salaryMax}` : "Belirtilmedi",
       tags: form.tags ? form.tags.split(",").map(t=>t.trim()).filter(Boolean) : [],
       phone: form.phone,
       posted: "Az önce",
@@ -4030,10 +4138,27 @@ export default function PusulaApp() {
   };
 
   // FIX 1: İşletme kaydı setMyBusiness'ı dolduruyor
-  const handleRegisterBiz = (form) => {
+  const handleRegisterBiz = async (form) => {
     const catInfo = categories.find(c=>c.id===form.category)||{};
+    const { data: { user } } = await supabase.auth.getUser();
+    
+    const { data, error } = await supabase.from("businesses").insert({
+      name: form.name,
+      category: form.category,
+      state: form.state,
+      city: form.city,
+      tags: form.tags ? form.tags.split(",").map(t=>t.trim()).filter(Boolean) : [],
+      verified: false,
+      featured: false,
+      phone: form.phone,
+      address: `${form.address}, ${form.city}, ${form.state} ${form.zip}`,
+      description: form.description,
+      hours: form.hours.map(h=>({ open:h.open, from:h.from, to:h.to })),
+      owner_id: user?.id || null,
+    }).select().single();
+
     const newBiz = {
-      id: Date.now(),
+      id: data?.id || Date.now(),
       name: form.name,
       cat: form.category,
       state: form.state,
@@ -4050,6 +4175,7 @@ export default function PusulaApp() {
       hours: form.hours.map(h=>({ open:h.open, from:h.from, to:h.to })),
       gallery: [catInfo.icon||"🏢"],
     };
+
     setMyBusiness(newBiz);
     setUserProfile(p=>({...p, bizCount:(p.bizCount||0)+1}));
     setNotifications(prev=>[
