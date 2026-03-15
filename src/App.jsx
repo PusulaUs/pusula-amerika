@@ -74,17 +74,17 @@ function SplashScreen({ onDone }) {
         backdropFilter:"blur(12px)",
         animation:"pulseGlow 2.5s ease-in-out infinite",
         display:"flex", alignItems:"center", justifyContent:"center",
+        overflow:"hidden",
       }}>
-        {/* Pusula iğnesi */}
+       {/* Pusula iğnesi */}
         <div style={{
-          width:6, height:90, position:"absolute",
-          top:"50%", left:"50%",
+          width:6, height:50, position:"absolute",
+          top:10, left:57,
           transformOrigin:"bottom center",
-          transform:"translate(-50%,-100%)",
           animation:"compassSpin 1.8s cubic-bezier(0.34,1.56,0.64,1) forwards",
         }}>
-          <div style={{ width:6, height:45, background:"linear-gradient(180deg,#C9A84C,#E8C96A)", borderRadius:"3px 3px 0 0" }}/>
-          <div style={{ width:6, height:45, background:"rgba(255,255,255,0.25)", borderRadius:"0 0 3px 3px" }}/>
+          <div style={{ width:6, height:25, background:"linear-gradient(180deg,#C9A84C,#E8C96A)", borderRadius:"3px 3px 0 0" }}/>
+          <div style={{ width:6, height:25, background:"rgba(255,255,255,0.25)", borderRadius:"0 0 3px 3px" }}/>
         </div>
         {/* Merkez nokta */}
         <div style={{ width:10, height:10, borderRadius:"50%", zIndex:2,
@@ -173,19 +173,18 @@ const US_STATES = [
 ];
 
 const categories = [
-  { id:"restaurant",  icon:"🍽️", label:"Restoran",     color:C.red      },
-  { id:"lawyer",      icon:"⚖️", label:"Avukat",        color:"#0D1F3C"  },
-  { id:"doctor",      icon:"🏥", label:"Doktor",        color:C.turq     },
-  { id:"homeservice", icon:"🔨", label:"Usta & Servis", color:"#B45309"  },
-  { id:"realestate",  icon:"🏠", label:"Emlak",         color:"#6D28D9"  },
-  { id:"market",      icon:"🛒", label:"Market",        color:"#047857"  },
-  { id:"beauty",      icon:"💇", label:"Güzellik",      color:"#BE185D"  },
-  { id:"accountant",  icon:"📊", label:"Muhasebe",      color:C.turqDark },
-  { id:"jobs",        icon:"💼", label:"İş İlanları",   color:C.red      },
-  { id:"events",      icon:"🎉", label:"Etkinlikler",   color:"#D97706"  },
-  { id:"other",       icon:"➕", label:"Diğer",         color:"#64748B"  },
+  { id:"restaurant",  icon:"🍽️", label:"Restoran",     labelEN:"Restaurant",   color:C.red      },
+  { id:"lawyer",      icon:"⚖️", label:"Avukat",        labelEN:"Lawyer",       color:"#0D1F3C"  },
+  { id:"doctor",      icon:"🏥", label:"Doktor",        labelEN:"Doctor",       color:C.turq     },
+  { id:"homeservice", icon:"🔨", label:"Usta & Servis", labelEN:"Home Service", color:"#B45309"  },
+  { id:"realestate",  icon:"🏠", label:"Emlak",         labelEN:"Real Estate",  color:"#6D28D9"  },
+  { id:"market",      icon:"🛒", label:"Market",        labelEN:"Market",       color:"#047857"  },
+  { id:"beauty",      icon:"💇", label:"Güzellik",      labelEN:"Beauty",       color:"#BE185D"  },
+  { id:"accountant",  icon:"📊", label:"Muhasebe",      labelEN:"Accounting",   color:C.turqDark },
+  { id:"jobs",        icon:"💼", label:"İş İlanları",   labelEN:"Jobs",         color:C.red      },
+  { id:"events",      icon:"🎉", label:"Etkinlikler",   labelEN:"Events",       color:"#D97706"  },
+  { id:"other",       icon:"➕", label:"Diğer",         labelEN:"Other",        color:"#64748B"  },
 ];
-
 // Şehir yakınlık haritası (yakın şehir önerileri için)
 const NEARBY_CITIES = {
   "Brooklyn":  ["Manhattan","Queens","Paterson"],
@@ -260,18 +259,18 @@ const H_247   = [0,1,2,3,4,5,6].map(d=>({ open: true, from:"00:00", to:"23:59" }
 const H_BEAUTY= [0,1,2,3,4,5,6].map(d=>({ open: d!==0&&d!==1, from:"10:00", to:"19:00" }));
 
 const businesses = [
-  { id:1,  name:"Bosphorus Kitchen",   cat:"restaurant",  state:"New York",   city:"Brooklyn",  rating:4.9, reviews:412, tags:["Helal","Türk","Teslimat"],           verified:true,  premium:true,  img:"🍽️", phone:"+1 (718) 555-0101", address:"143 Atlantic Ave, Brooklyn, NY 11201",         desc:"1997'den beri otantik Türk mutfağı. Helal sertifikalı, aile dostu ortam.",    hours:H_REST,   gallery:["🍽️","🥙","🫕","🍢","🧆"] },
-  { id:2,  name:"Av. Kemal Arslan",    cat:"lawyer",      state:"New Jersey", city:"Paterson",  rating:4.9, reviews:134, tags:["Göçmenlik","Türkçe"],                verified:true,  premium:true,  img:"⚖️", phone:"+1 (973) 555-0202", address:"250 Main St, Paterson, NJ 07501",              desc:"20+ yıl göçmenlik ve iş hukuku deneyimi. Türkçe hizmet veriyoruz.",           hours:H_OFFICE, gallery:["⚖️","📋","🏛️","📜","🤝"] },
-  { id:3,  name:"Dr. Ayşe Kaya",       cat:"doctor",      state:"Texas",      city:"Houston",   rating:4.8, reviews:267, tags:["Aile Hekimi","Türkçe"],              verified:true,  premium:false, img:"🏥", phone:"+1 (713) 555-0303", address:"3800 Kirby Dr, Houston, TX 77098",             desc:"Aile hekimliği uzmanı. Türkçe ve İngilizce muayene imkânı.",                  hours:H_OFFICE, gallery:["🏥","👩‍⚕️","💊","🩺","❤️‍🩹"] },
-  { id:4,  name:"Boğaz Emlak",         cat:"realestate",  state:"New York",   city:"Manhattan", rating:4.8, reviews:74,  tags:["Satış","Kiralık"],                   verified:true,  premium:true,  img:"🏠", phone:"+1 (212) 555-0404", address:"575 Lexington Ave, New York, NY 10022",        desc:"NYC'de Türk emlak danışmanlığı. Satış, kiralama ve yatırım.",                 hours:H_OFFICE, gallery:["🏠","🏙️","🗝️","📐","🏗️"] },
-  { id:5,  name:"İstanbul Market",     cat:"market",      state:"Florida",    city:"Miami",     rating:4.6, reviews:98,  tags:["Türk Ürünleri","Helal"],             verified:false, premium:false, img:"🛒", phone:"+1 (305) 555-0505", address:"1234 Brickell Ave, Miami, FL 33131",           desc:"Türkiye'den ithal ürünler, helal et, taze sebze ve meyve.",                   hours:H_REST,   gallery:["🛒","🫙","🧀","🫒","🍬"] },
-  { id:6,  name:"Anadolu Muhasebe",    cat:"accountant",  state:"New Jersey", city:"Paterson",  rating:4.8, reviews:88,  tags:["Vergi","Şirket Kurma"],              verified:true,  premium:false, img:"📊", phone:"+1 (973) 555-0606", address:"100 Hamilton Plaza, Paterson, NJ 07505",       desc:"Vergi beyannamesi, şirket kurma, muhasebe danışmanlığı.",                     hours:H_OFFICE, gallery:["📊","💼","🖥️","📁","🗂️"] },
-  { id:7,  name:"Marmara Elektrik",    cat:"homeservice", state:"New York",   city:"Brooklyn",  rating:4.7, reviews:63,  tags:["Elektrikçi","Lisanslı","7/24"],      verified:true,  premium:false, img:"⚡", phone:"+1 (718) 555-0707", address:"78 Court St, Brooklyn, NY 11201",              desc:"Lisanslı elektrikçi. Acil servis 7/24, ücretsiz keşif.",                      hours:H_247,    gallery:["⚡","🔌","💡","🔧","🛠️"] },
-  { id:8,  name:"İstanbul Tesisat",    cat:"homeservice", state:"New Jersey", city:"Paterson",  rating:4.8, reviews:47,  tags:["Tesisatçı","Acil","Garantili"],      verified:true,  premium:false, img:"🔧", phone:"+1 (973) 555-0808", address:"55 Broadway, Paterson, NJ 07501",              desc:"Su tesisatı, ısıtma sistemleri, acil müdahale.",                              hours:H_247,    gallery:["🔧","🚿","🪠","🔩","🏠"] },
-  { id:9,  name:"Ankara Oto Servis",   cat:"homeservice", state:"California", city:"L.A.",      rating:4.7, reviews:112, tags:["Oto Servis","BMW","Mercedes"],        verified:true,  premium:true,  img:"🚗", phone:"+1 (213) 555-0909", address:"6801 Hollywood Blvd, Los Angeles, CA 90028",   desc:"Alman araçları uzmanı. BMW, Mercedes, Audi servisi.",                         hours:H_OFFICE, gallery:["🚗","🔩","🛞","⚙️","🏎️"] },
-  { id:10, name:"Türk Boya & Tadilat", cat:"homeservice", state:"New York",   city:"Queens",    rating:4.6, reviews:38,  tags:["Boyacı","Tadilat","Ücretsiz Keşif"], verified:false, premium:false, img:"🪣", phone:"+1 (718) 555-1010", address:"37-10 Junction Blvd, Queens, NY 11372",        desc:"İç ve dış cephe boya, tadilat, tamirat hizmetleri.",                          hours:H_OFFICE, gallery:["🪣","🖌️","🏠","🎨","🪚"] },
-  { id:11, name:"Saç Studio İstanbul", cat:"beauty",      state:"New York",   city:"Brooklyn",  rating:4.9, reviews:203, tags:["Kuaför","Türk","Randevu"],           verified:true,  premium:true,  img:"💇", phone:"+1 (718) 555-1111", address:"192 Bedford Ave, Brooklyn, NY 11211",          desc:"Türk ustalığıyla saç kesimi, renk ve bakım hizmetleri.",                      hours:H_BEAUTY, gallery:["💇","✂️","💆","💅","🪮"] },
-  { id:12, name:"Mavi Berber",         cat:"beauty",      state:"New Jersey", city:"Paterson",  rating:4.8, reviews:156, tags:["Berber","Erkek","Sakal"],            verified:true,  premium:false, img:"✂️", phone:"+1 (973) 555-1212", address:"88 Market St, Paterson, NJ 07501",             desc:"Klasik Türk berberi. Saç, sakal, bıyık şekillendirme.",                       hours:H_BEAUTY, gallery:["✂️","🪒","💈","🧔","🪮"] },
+  { id:1,  name:"Bosphorus Kitchen",   cat:"restaurant",  state:"New York",   city:"Brooklyn",  rating:4.9, reviews:412, tags:["Aile Dostu","Otantik","Türkçe Hizmet"],           verified:true,  onaylı:true,  img:"🍽️", phone:"+1 (718) 555-0101", address:"143 Atlantic Ave, Brooklyn, NY 11201",         desc:"1997'den beri otantik Türk mutfağı. Helal sertifikalı, aile dostu ortam.",    hours:H_REST,   gallery:["🍽️","🥙","🫕","🍢","🧆"] },
+  { id:2,  name:"Av. Kemal Arslan",    cat:"lawyer",      state:"New Jersey", city:"Paterson",  rating:4.9, reviews:134, tags:["Göçmenlik","Türkçe"],                verified:true,  onaylı:true,  img:"⚖️", phone:"+1 (973) 555-0202", address:"250 Main St, Paterson, NJ 07501",              desc:"20+ yıl göçmenlik ve iş hukuku deneyimi. Türkçe hizmet veriyoruz.",           hours:H_OFFICE, gallery:["⚖️","📋","🏛️","📜","🤝"] },
+  { id:3,  name:"Dr. Ayşe Kaya",       cat:"doctor",      state:"Texas",      city:"Houston",   rating:4.8, reviews:267, tags:["Aile Hekimi","Türkçe"],              verified:true,  onaylı:false, img:"🏥", phone:"+1 (713) 555-0303", address:"3800 Kirby Dr, Houston, TX 77098",             desc:"Aile hekimliği uzmanı. Türkçe ve İngilizce muayene imkânı.",                  hours:H_OFFICE, gallery:["🏥","👩‍⚕️","💊","🩺","❤️‍🩹"] },
+  { id:4,  name:"Boğaz Emlak",         cat:"realestate",  state:"New York",   city:"Manhattan", rating:4.8, reviews:74,  tags:["Satış","Kiralık"],                   verified:true,  onaylı:true,  img:"🏠", phone:"+1 (212) 555-0404", address:"575 Lexington Ave, New York, NY 10022",        desc:"NYC'de Türk emlak danışmanlığı. Satış, kiralama ve yatırım.",                 hours:H_OFFICE, gallery:["🏠","🏙️","🗝️","📐","🏗️"] },
+  { id:5,  name:"İstanbul Market",     cat:"market",      state:"Florida",    city:"Miami",     rating:4.6, reviews:98,  tags:["Türk Ürünleri","Organik"],             verified:false, onaylı:false, img:"🛒", phone:"+1 (305) 555-0505", address:"1234 Brickell Ave, Miami, FL 33131",           desc:"Türkiye'den ithal ürünler, helal et, taze sebze ve meyve.",                   hours:H_REST,   gallery:["🛒","🫙","🧀","🫒","🍬"] },
+  { id:6,  name:"Anadolu Muhasebe",    cat:"accountant",  state:"New Jersey", city:"Paterson",  rating:4.8, reviews:88,  tags:["Vergi","Şirket Kurma"],              verified:true,  onaylı:false, img:"📊", phone:"+1 (973) 555-0606", address:"100 Hamilton Plaza, Paterson, NJ 07505",       desc:"Vergi beyannamesi, şirket kurma, muhasebe danışmanlığı.",                     hours:H_OFFICE, gallery:["📊","💼","🖥️","📁","🗂️"] },
+  { id:7,  name:"Marmara Elektrik",    cat:"homeservice", state:"New York",   city:"Brooklyn",  rating:4.7, reviews:63,  tags:["Elektrikçi","Lisanslı","7/24"],      verified:true,  onaylı:false, img:"⚡", phone:"+1 (718) 555-0707", address:"78 Court St, Brooklyn, NY 11201",              desc:"Lisanslı elektrikçi. Acil servis 7/24, ücretsiz keşif.",                      hours:H_247,    gallery:["⚡","🔌","💡","🔧","🛠️"] },
+  { id:8,  name:"İstanbul Tesisat",    cat:"homeservice", state:"New Jersey", city:"Paterson",  rating:4.8, reviews:47,  tags:["Tesisatçı","Acil","Garantili"],      verified:true,  onaylı:false, img:"🔧", phone:"+1 (973) 555-0808", address:"55 Broadway, Paterson, NJ 07501",              desc:"Su tesisatı, ısıtma sistemleri, acil müdahale.",                              hours:H_247,    gallery:["🔧","🚿","🪠","🔩","🏠"] },
+  { id:9,  name:"Ankara Oto Servis",   cat:"homeservice", state:"California", city:"L.A.",      rating:4.7, reviews:112, tags:["Oto Servis","BMW","Mercedes"],        verified:true,  onaylı:true,  img:"🚗", phone:"+1 (213) 555-0909", address:"6801 Hollywood Blvd, Los Angeles, CA 90028",   desc:"Alman araçları uzmanı. BMW, Mercedes, Audi servisi.",                         hours:H_OFFICE, gallery:["🚗","🔩","🛞","⚙️","🏎️"] },
+  { id:10, name:"Türk Boya & Tadilat", cat:"homeservice", state:"New York",   city:"Queens",    rating:4.6, reviews:38,  tags:["Boyacı","Tadilat","Ücretsiz Keşif"], verified:false, onaylı:false, img:"🪣", phone:"+1 (718) 555-1010", address:"37-10 Junction Blvd, Queens, NY 11372",        desc:"İç ve dış cephe boya, tadilat, tamirat hizmetleri.",                          hours:H_OFFICE, gallery:["🪣","🖌️","🏠","🎨","🪚"] },
+  { id:11, name:"Saç Studio İstanbul", cat:"beauty",      state:"New York",   city:"Brooklyn",  rating:4.9, reviews:203, tags:["Kuaför","Randevu","Türkçe Hizmet"],           verified:true,  onaylı:true,  img:"💇", phone:"+1 (718) 555-1111", address:"192 Bedford Ave, Brooklyn, NY 11211",          desc:"Türk ustalığıyla saç kesimi, renk ve bakım hizmetleri.",                      hours:H_BEAUTY, gallery:["💇","✂️","💆","💅","🪮"] },
+  { id:12, name:"Mavi Berber",         cat:"beauty",      state:"New Jersey", city:"Paterson",  rating:4.8, reviews:156, tags:["Berber","Erkek","Sakal"],            verified:true,  onaylı:false, img:"✂️", phone:"+1 (973) 555-1212", address:"88 Market St, Paterson, NJ 07501",             desc:"Klasik Türk berberi. Saç, sakal, bıyık şekillendirme.",                       hours:H_BEAUTY, gallery:["✂️","🪒","💈","🧔","🪮"] },
 ];
 
 const jobs = [
@@ -336,7 +335,7 @@ const PusulaLogo = ({ size=40, dark=false }) => {
         </div>
         <div style={{ fontSize:size>32?9:8, color:sc, letterSpacing:2.5,
           textTransform:"uppercase", marginTop:2, fontFamily:"'Montserrat',sans-serif",
-          fontWeight:600 }}>Türk Rehberi · ABD</div>
+          fontWeight:600 }}>Amerika Rehberi </div>
       </div>
     </div>
   );
@@ -369,7 +368,7 @@ function Onboarding({ onDone }) {
           {step===0 ? "Hoş Geldiniz" : "Konumunuz"}
         </div>
         <div className="playfair" style={{ fontSize:22, fontWeight:"800", color:C.white, lineHeight:1.4 }}>
-          {step===0 ? "Amerika'daki Türklerin\nyolunu aydınlatıyoruz"
+          {step===0 ? "Amerika'daki Türklerin Yol Arkadaşı"
                     : "Hangi eyalette\nyaşıyorsunuz?"}
         </div>
       </div>
@@ -400,7 +399,7 @@ function Onboarding({ onDone }) {
               </div>
               <div>
                 <div style={{ fontSize:14, fontWeight:700, color:C.text, marginBottom:3 }}>
-                  Amerika'nın Türk Rehberi
+                  Amerika'daki Türk Topluluğunu Keşfet
                 </div>
                 <div style={{ fontSize:12, color:C.textSub, lineHeight:1.5 }}>
                   50 eyalet · 2.400+ işletme · Türkçe destek
@@ -520,8 +519,11 @@ function Home({ userState, userCity, onBusiness, onTab, favorites, toggleFav, on
   const filtered = businesses
     .filter(b => {
       if (selCat && b.cat !== selCat) return false;
-      if (search && !b.name.toLowerCase().includes(search.toLowerCase()) &&
-          !b.tags.some(t=>t.toLowerCase().includes(search.toLowerCase()))) return false;
+      const q = search.toLocaleLowerCase("tr");
+      if (search && !b.name.toLocaleLowerCase("tr").includes(q) &&
+          !b.city.toLocaleLowerCase("tr").includes(q) &&
+          !b.desc.toLocaleLowerCase("tr").includes(q) &&
+          !b.tags.some(t=>t.toLocaleLowerCase("tr").includes(q))) return false;
       if (filterState && b.state !== filterState) return false;
       if (filterCity  && !b.city.toLowerCase().includes(filterCity.toLowerCase())) return false;
       if (filterVerify && !b.verified) return false;
@@ -530,7 +532,7 @@ function Home({ userState, userCity, onBusiness, onTab, favorites, toggleFav, on
     .sort((a,b) => {
       if (sortBy==="rating")  return b.rating  - a.rating;
       if (sortBy==="reviews") return b.reviews - a.reviews;
-      if (sortBy==="premium") return (b.premium?0:1) - (a.premium?0:1);
+      if (sortBy==="onaylı") return (b.onaylı?0:1) - (a.onaylı?0:1);
       return 0;
     });
 
@@ -541,7 +543,7 @@ function Home({ userState, userCity, onBusiness, onTab, favorites, toggleFav, on
 
   const featured = businesses.filter(b=>b.verified && b.rating>=4.8).slice(0,4);
   const activeCat = categories.find(c=>c.id===selCat);
-  const isFiltering = selCat || search || activeFilterCount > 0;
+  const isFiltering = selCat || search.trim() || activeFilterCount > 0;
 
   const clearAll = () => {
     setSelCat(null); setSearch(""); setFilterState(""); setFilterCity("");
@@ -597,7 +599,7 @@ function Home({ userState, userCity, onBusiness, onTab, favorites, toggleFav, on
             <span style={{ color:"rgba(255,255,255,0.7)", fontSize:15 }}>🔍</span>
             <input value={search}
               onFocus={()=>!search&&setShowOverlay(true)}
-              onChange={e=>{ setSearch(e.target.value); setShowOverlay(false); }}
+              onChange={e=>{ setSearch(e.target.value); setShowOverlay(false); if(e.target.value) setSelCat(null); }}
               onKeyDown={e=>{ if(e.key==="Enter"&&search){ onAddSearchHistory(search); setShowOverlay(false); }}}
               placeholder={lang==="TR"?"İşletme ara...":"Search businesses..."}
               style={{ background:"none", border:"none", outline:"none",
@@ -666,10 +668,10 @@ function Home({ userState, userCity, onBusiness, onTab, favorites, toggleFav, on
               letterSpacing:1.5, textTransform:"uppercase", marginBottom:8 }}>Sıralama</div>
             <div style={{ display:"flex", gap:6 }}>
               {[
-                { val:"default", label:"Varsayılan"      },
-                { val:"rating",  label:"En Yüksek Puan"  },
-                { val:"reviews", label:"En Çok Yorum"    },
-                { val:"premium", label:"⭐ Premium Önce"  },
+                { val:"default", label:"Varsayılan"     },
+                { val:"rating",  label:"En Yüksek Puan" },
+                { val:"reviews", label:"En Çok Yorum"   },
+                
               ].map(s=>(
                 <div key={s.val} onClick={()=>setSortBy(s.val)} style={{ flex:1,
                   padding:"7px 4px", borderRadius:9, textAlign:"center", cursor:"pointer",
@@ -741,7 +743,7 @@ function Home({ userState, userCity, onBusiness, onTab, favorites, toggleFav, on
                 <circle cx="22" cy="22" r="3" fill="white"/>
               </svg>
               <div style={{ flex:1 }}>
-                <div style={{ fontSize:12, fontWeight:700, color:C.white }}>Türk Rehberi — Amerika</div>
+                <div style={{ fontSize:12, fontWeight:700, color:C.white }}>Amerika'da Türk İşletmeleri</div>
                 <div style={{ fontSize:10, color:"rgba(255,255,255,0.65)" }}>2.400+ onaylı işletme · 50 eyalet</div>
               </div>
               <div onClick={onRegister} style={{ background:"rgba(255,255,255,0.18)",
@@ -771,7 +773,7 @@ function Home({ userState, userCity, onBusiness, onTab, favorites, toggleFav, on
                       textAlign:"center", cursor:"pointer", transition:"all 0.15s" }}>
                       <div style={{ fontSize:21, marginBottom:5 }}>{cat.icon}</div>
                       <div style={{ fontSize:9, fontWeight:700, lineHeight:1.2,
-                        color:active?C.white:C.textSub }}>{cat.label}</div>
+                        color:active?C.white:C.textSub }}>{lang==="EN"?(cat.labelEN||cat.label):cat.label}</div>
                     </div>
                   );
                 })}
@@ -798,31 +800,69 @@ function Home({ userState, userCity, onBusiness, onTab, favorites, toggleFav, on
               </div>
             </div>
 
-            {/* Öne Çıkanlar */}
+            {/* Öne Çıkan Etkinlikler */}
             <div style={{ padding:"18px 18px 0" }}>
               <div style={{ display:"flex", justifyContent:"space-between",
                 alignItems:"center", marginBottom:12 }}>
-                <SLabel>⭐ ÖNE ÇIKANLAR</SLabel>
+                <SLabel>🎉 ÖNE ÇIKAN ETKİNLİKLER</SLabel>
+                <div onClick={()=>onTab("events")} style={{ fontSize:12, color:C.red, fontWeight:600,
+                  cursor:"pointer", marginTop:-12 }}>Tümü →</div>
+              </div>
+              <div style={{ display:"flex", gap:12, overflowX:"auto", paddingBottom:4 }}>
+                {events.slice(0,4).map(ev => (
+                  <div key={ev.id} style={{ flexShrink:0, width:160,
+                    background:C.white, border:`1px solid ${C.border}`,
+                    borderRadius:16, overflow:"hidden", cursor:"pointer",
+                    boxShadow:"0 1px 4px rgba(13,31,60,0.07)" }}>
+                    <div style={{ height:66,
+                      background:`linear-gradient(135deg,#FFF8E1,#FFF3CD)`,
+                      display:"flex", alignItems:"center", justifyContent:"center",
+                      fontSize:32, borderBottom:`1px solid ${C.border}`, position:"relative" }}>
+                      {ev.img}
+                      <div style={{ position:"absolute", top:6, right:6,
+                        background: ev.free ? "#065F46" : C.turq,
+                        borderRadius:6, padding:"2px 6px",
+                        fontSize:8, fontWeight:700, color:C.white }}>
+                        {ev.free ? "ÜCRETSİZ" : ev.price}
+                      </div>
+                    </div>
+                    <div style={{ padding:"10px 12px" }}>
+                      <div style={{ fontSize:11, fontWeight:700, color:C.text, marginBottom:3,
+                        overflow:"hidden", textOverflow:"ellipsis",
+                        display:"-webkit-box", WebkitLineClamp:2, WebkitBoxOrient:"vertical" }}>
+                        {ev.title}
+                      </div>
+                      <div style={{ fontSize:10, color:C.textMute, marginBottom:2 }}>📅 {ev.date}</div>
+                      <div style={{ fontSize:10, color:C.textMute }}>📍 {ev.location}</div>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            </div>
+
+            {/* Öne Çıkan İşletmeler */}
+            <div style={{ padding:"18px 18px 0" }}>
+              <div style={{ display:"flex", justifyContent:"space-between",
+                alignItems:"center", marginBottom:12 }}>
+                <SLabel>🏆 ÖNE ÇIKAN İŞLETMELER</SLabel>
                 <div style={{ fontSize:12, color:C.red, fontWeight:600,
                   cursor:"pointer", marginTop:-12 }}>Tümü →</div>
               </div>
               <div style={{ display:"flex", gap:12, overflowX:"auto", paddingBottom:4 }}>
                 {featured.map(b => (
                   <div key={b.id} onClick={()=>onBusiness(b)} style={{ flexShrink:0, width:148,
-                    background:C.white, border:`1px solid ${C.border}`,
+                    background:C.white, border:`1.5px solid #F59E0B`,
                     borderRadius:16, overflow:"hidden", cursor:"pointer",
-                    boxShadow:"0 1px 4px rgba(200,16,46,0.07)" }}>
+                    boxShadow:"0 2px 8px rgba(245,158,11,0.15)" }}>
                     <div style={{ height:66,
-                      background:`linear-gradient(135deg,${C.redPale},#FFF5F6)`,
+                      background:`linear-gradient(135deg,#FFF8E1,#FFF3CD)`,
                       display:"flex", alignItems:"center", justifyContent:"center",
-                      fontSize:30, borderBottom:`1px solid ${C.border}`, position:"relative" }}>
+                      fontSize:30, borderBottom:`1px solid #F59E0B`, position:"relative" }}>
                       {b.img}
-                      {b.verified && (
-                        <div style={{ position:"absolute", top:6, right:6, width:18, height:18,
-                          borderRadius:"50%", background:C.turq, border:"2px solid white",
-                          display:"flex", alignItems:"center", justifyContent:"center",
-                          fontSize:9, color:C.white, fontWeight:700 }}>✓</div>
-                      )}
+                      <div style={{ position:"absolute", top:6, right:6,
+                        background:"linear-gradient(135deg,#F59E0B,#D97706)",
+                        borderRadius:6, padding:"2px 5px",
+                        fontSize:8, fontWeight:700, color:C.white }}>⭐ ÖNE ÇIKAN</div>
                     </div>
                     <div style={{ padding:"10px 12px" }}>
                       <div style={{ fontSize:12, fontWeight:700, color:C.text, marginBottom:2,
@@ -857,15 +897,15 @@ function Home({ userState, userCity, onBusiness, onTab, favorites, toggleFav, on
                     {nearby.map(b=>(
                       <div key={b.id} onClick={()=>onBusiness(b)} style={{ flexShrink:0, width:156,
                         background:C.white,
-                        border:`1.5px solid ${b.premium?"#F59E0B":C.border}`,
+                        border:`1.5px solid ${b.onaylı?"#F59E0B":C.border}`,
                         borderRadius:14, padding:"12px", cursor:"pointer",
-                        boxShadow: b.premium?"0 2px 8px rgba(245,158,11,0.18)":"0 1px 4px rgba(200,16,46,0.05)",
+                        boxShadow: b.onaylı?"0 2px 8px rgba(245,158,11,0.18)":"0 1px 4px rgba(200,16,46,0.05)",
                         position:"relative" }}>
-                        {b.premium && (
+                        {b.onaylı && (
                           <div style={{ position:"absolute", top:8, right:8,
                             background:"linear-gradient(135deg,#F59E0B,#D97706)",
                             borderRadius:6, padding:"2px 6px",
-                            fontSize:8, fontWeight:700, color:C.white }}>⭐ PREMİUM</div>
+                            fontSize:8, fontWeight:700, color:C.white }}>✅ONAYLANMIŞ</div>
                         )}
                         <div style={{ fontSize:26, marginBottom:8 }}>{b.img}</div>
                         <div style={{ fontSize:12, fontWeight:700, color:C.text,
@@ -921,6 +961,19 @@ function Home({ userState, userCity, onBusiness, onTab, favorites, toggleFav, on
           )}
 
           {/* Aktif filtre etiketleri */}
+          {selCat && (
+            <div style={{ display:"flex", alignItems:"center", gap:8, marginBottom:10 }}>
+              <div onClick={()=>setSelCat(null)} style={{ display:"flex", alignItems:"center",
+                gap:6, background:C.white, border:`1px solid ${C.border}`,
+                borderRadius:20, padding:"6px 14px", fontSize:12, fontWeight:700,
+                color:C.red, cursor:"pointer" }}>← Ana Menüye Dön</div>
+              <div style={{ fontSize:12, fontWeight:600, color:C.textSub }}>
+                {lang==="EN"
+                  ? (categories.find(c=>c.id===selCat)?.labelEN||categories.find(c=>c.id===selCat)?.label)
+                  : categories.find(c=>c.id===selCat)?.label}
+              </div>
+            </div>
+          )}
           {isFiltering && activeFilterCount>0 && (
             <div style={{ display:"flex", gap:6, flexWrap:"wrap", marginBottom:12 }}>
               {filterState && (
@@ -948,17 +1001,20 @@ function Home({ userState, userCity, onBusiness, onTab, favorites, toggleFav, on
                 <div onClick={()=>setSortBy("default")} style={{ display:"flex", alignItems:"center",
                   gap:4, background:"#64748B", borderRadius:20, padding:"4px 10px",
                   fontSize:10, fontWeight:700, color:C.white, cursor:"pointer" }}>
-                  ↕ {sortBy==="rating"?"En Yüksek Puan":sortBy==="reviews"?"En Çok Yorum":"Premium Önce"} ✕
+                  ↕ {sortBy==="rating"?"En Yüksek Puan":sortBy==="reviews"?"En Çok Yorum":"onaylı Önce"} ✕
                 </div>
               )}
             </div>
           )}
 
           {filtered.length===0 ? (
-            <div style={{ textAlign:"center", padding:"32px 0" }}>
-              <div style={{ fontSize:40, marginBottom:12 }}>🔍</div>
-              <div style={{ fontSize:14, fontWeight:600, color:C.textSub, marginBottom:6 }}>
-                {filterCity ? `"${filterCity}" şehrinde işletme bulunamadı` : "Sonuç bulunamadı"}
+            <div style={{ textAlign:"center", padding:"40px 20px" }}>
+              <div style={{ fontSize:48, marginBottom:16 }}>🧭</div>
+              <div style={{ fontSize:15, fontWeight:700, color:C.text, marginBottom:8 }}>
+                {filterCity ? `"${filterCity}" şehrinde henüz işletme yok` : "Sonuç bulunamadı"}
+              </div>
+              <div style={{ fontSize:12, color:C.textMute, marginBottom:16, lineHeight:1.6 }}>
+                {filterCity ? "Yakın şehirlere bakabilir ya da filtreleri temizleyebilirsin." : "Farklı bir arama dene ya da filtreleri temizle."}
               </div>
               {nearbyCities.length>0 ? (
                 <div style={{ marginTop:16 }}>
@@ -999,10 +1055,10 @@ function Home({ userState, userCity, onBusiness, onTab, favorites, toggleFav, on
                   <div style={{ fontSize:14, fontWeight:700, color:C.text,
                     flex:1, marginRight:6 }}>{b.name}</div>
                   <div style={{ display:"flex", gap:4, flexShrink:0 }}>
-                    {b.premium && (
+                    {b.onaylı && (
                       <span style={{ background:"linear-gradient(135deg,#F59E0B,#D97706)",
                         borderRadius:6, padding:"2px 6px",
-                        fontSize:9, color:C.white, fontWeight:700 }}>⭐ PREMİUM</span>
+                        fontSize:9, color:C.white, fontWeight:700 }}>✅ONAYLANMIŞ</span>
                     )}
                     {b.verified && (
                       <span style={{ background:C.turqLight, borderRadius:6, padding:"2px 6px",
@@ -1123,14 +1179,8 @@ function Favorites({ favorites, onBusiness, toggleFav }) {
 }
 
 function Jobs({ onBack, onPost, extraJobs=[] }) {
-  const [filter, setFilter] = useState("Tümü");
-  const [savedJobs, setSavedJobs] = useState([]);
-  const toggleSave = id => setSavedJobs(p=>p.includes(id)?p.filter(x=>x!==id):[...p,id]);
-  const types = ["Tümü","Tam Zamanlı","Yarı Zamanlı","Serbest","Remote"];
   const allJobs = [...extraJobs, ...jobs];
-  const filtered = filter==="Tümü" ? allJobs
-    : filter==="Remote" ? allJobs.filter(j=>j.location==="Remote"||j.tags.includes("Remote"))
-    : allJobs.filter(j=>j.type===filter);
+  const filtered = allJobs;
 
   return (
     <div style={{ height:"100%", display:"flex", flexDirection:"column", background:C.bgSoft }}>
@@ -1151,15 +1201,7 @@ function Jobs({ onBack, onPost, extraJobs=[] }) {
             borderRadius:10, padding:"7px 14px",
             fontSize:11, fontWeight:700, color:C.white, cursor:"pointer" }}>+ İlan Ver</div>
         </div>
-        <div style={{ display:"flex", gap:6, overflowX:"auto", paddingBottom:12 }}>
-          {types.map(t => (
-            <div key={t} onClick={()=>setFilter(t)} style={{ flexShrink:0,
-              padding:"6px 14px", borderRadius:20, fontSize:11, fontWeight:600, cursor:"pointer",
-              background:filter===t?C.red:C.redPale,
-              border:`1px solid ${filter===t?C.red:C.border}`,
-              color:filter===t?C.white:C.textSub }}>{t}</div>
-          ))}
-        </div>
+
       </div>
       <div style={{ flex:1, overflowY:"auto", padding:"16px 18px" }}>
         {filtered.map(job => (
@@ -1180,27 +1222,27 @@ function Jobs({ onBack, onPost, extraJobs=[] }) {
             </div>
             <div style={{ display:"flex", gap:14, marginBottom:8 }}>
               <span style={{ fontSize:11, color:C.textSub }}>📍 {job.location}</span>
-              <span style={{ fontSize:11, color:C.textSub }}>🕐 {job.type}</span>
+
             </div>
             <div style={{ display:"flex", justifyContent:"space-between", alignItems:"center", marginBottom:10 }}>
-              <span style={{ fontSize:14, fontWeight:700, color:C.red }}>💰 {job.salary}</span>
+            
               <span style={{ fontSize:11, color:C.textMute }}>{job.posted}</span>
             </div>
             <div style={{ display:"flex", flexWrap:"wrap", gap:5, marginBottom:12 }}>
               {job.tags.map(t=><Tag key={t} label={t}/>)}
             </div>
             <div style={{ display:"flex", gap:8 }}>
-              <div style={{ flex:2, background:`linear-gradient(135deg,${C.red},${C.redDark})`,
+              {job.phone && (
+                <a href={`tel:${job.phone}`} style={{ flex:2,
+                  background:`linear-gradient(135deg,${C.red},${C.redDark})`,
+                  borderRadius:10, padding:"10px", textAlign:"center",
+                  fontSize:12, fontWeight:700, color:C.white, cursor:"pointer",
+                  textDecoration:"none", display:"block" }}>📞 İletişime Geç</a>
+              )}
+              <div onClick={()=>{if(navigator.share)navigator.share({title:job.title,text:`${job.company}`});}}
+                style={{ flex:1, background:C.redPale, border:`1px solid ${C.border}`,
                 borderRadius:10, padding:"10px", textAlign:"center",
-                fontSize:12, fontWeight:700, color:C.white, cursor:"pointer" }}>Başvur</div>
-              <div onClick={()=>toggleSave(job.id)} style={{ flex:1,
-                background:savedJobs.includes(job.id)?C.red:C.redPale,
-                border:`1px solid ${savedJobs.includes(job.id)?C.red:C.border}`,
-                borderRadius:10, padding:"10px", textAlign:"center",
-                fontSize:12, fontWeight:savedJobs.includes(job.id)?700:400,
-                color:savedJobs.includes(job.id)?C.white:C.textSub, cursor:"pointer" }}>
-                {savedJobs.includes(job.id)?"✓ Kaydedildi":"🔖 Kaydet"}
-              </div>
+                fontSize:12, color:C.textSub, cursor:"pointer" }}>📤 Paylaş</div>
             </div>
           </div>
         ))}
@@ -1305,25 +1347,7 @@ function Events({ onBack, onPost }) {
 const HOURS = ["Kapalı","07:00","08:00","09:00","10:00","11:00","12:00",
   "13:00","14:00","15:00","16:00","17:00","18:00","19:00","20:00","21:00","22:00","23:00","00:00"];
 const DAYS  = ["Pzt","Sal","Çar","Per","Cum","Cmt","Paz"];
-
-function RegisterBusiness({ onBack, onSuccess }) {
-  const [step, setStep] = useState(0); // 0..3
-  const [form, setForm] = useState({
-    name:"", category:"", description:"",
-    address:"", city:"", state:"", zip:"",
-    phone:"", website:"",
-    hours: DAYS.map(d=>({ day:d, open:true, from:"09:00", to:"18:00" })),
-    tags:"",
-  });
-  const [submitted, setSubmitted] = useState(false);
-
-  const set = (k,v) => setForm(f=>({...f,[k]:v}));
-
-  const stepTitles = ["Temel Bilgiler","Konum & İletişim","Çalışma Saatleri","Açıklama & Etiketler"];
-  const stepIcons  = ["🏢","📍","🕐","✏️"];
-
-  /* Alan bileşenleri */
-  const Field = ({ label, value, onChange, placeholder, type="text", required }) => (
+const Field = ({ label, value, onChange, placeholder, type="text", required }) => (
     <div style={{ marginBottom:14 }}>
       <div style={{ fontSize:11, fontWeight:700, color:C.textSub,
         letterSpacing:0.5, marginBottom:6 }}>
@@ -1339,6 +1363,23 @@ function RegisterBusiness({ onBack, onSuccess }) {
         onBlur={e=>e.target.style.borderColor=C.border}/>
     </div>
   );
+function RegisterBusiness({ onBack, onSuccess }) {
+  const [step, setStep] = useState(0); // 0..3
+  const [form, setForm] = useState({
+    name:"", category:"", description:"",
+    address:"", city:"", state:"", zip:"",
+    phone:"", website:"",
+    hours: DAYS.map(d=>({ day:d, open:true, from:"09:00", to:"18:00" })),
+   
+  });
+  const [submitted, setSubmitted] = useState(false);
+
+  const set = (k,v) => setForm(f=>({...f,[k]:v}));
+
+  const stepTitles = ["Temel Bilgiler","Konum & İletişim","Çalışma Saatleri","Açıklama & Etiketler"];
+  const stepIcons  = ["🏢","📍","🕐","✏️"];
+
+  /* Alan bileşenleri */ 
 
   const phoneValid = v => /^[\+\d\s\(\)\-]{7,20}$/.test(v.trim());
 
@@ -1565,11 +1606,11 @@ function RegisterBusiness({ onBack, onSuccess }) {
               </div>
             </div>
 
-            {/* Etiketler */}
+            
+             {/* Etiketler */}
             <Field label="Etiketler (virgülle ayırın)" value={form.tags}
               onChange={v=>set("tags",v)}
-              placeholder="örn. Helal, Türkçe, Lisanslı, 7/24"/>
-
+              placeholder="örn. Lisanslı, 7/24, Ücretsiz Keşif, Türkçe Hizmet"/>
             {/* Özet önizleme */}
             {form.name && form.category && (
               <div style={{ background:C.redPale, border:`1px solid ${C.border}`,
@@ -1742,7 +1783,9 @@ function ProfilePage({ userProfile, onEdit, favorites, onBusiness, loggedIn, onL
             background:"rgba(255,255,255,0.2)", border:"2.5px solid rgba(255,255,255,0.4)",
             display:"flex", alignItems:"center", justifyContent:"center",
             fontSize:28, overflow:"hidden" }}>
-            {userProfile.avatar || "👤"}
+            {userProfile.photoURL
+              ? <img src={userProfile.photoURL} alt="profil" style={{ width:"100%", height:"100%", objectFit:"cover" }}/>
+              : (userProfile.avatar || "👤")}
           </div>
           <div style={{ flex:1 }}>
             <div style={{ fontSize:19, fontWeight:800, color:C.white, marginBottom:3 }}>
@@ -1769,9 +1812,8 @@ function ProfilePage({ userProfile, onEdit, favorites, onBusiness, loggedIn, onL
       <div style={{ background:C.white, borderBottom:`1px solid ${C.border}`,
         display:"flex", marginTop:-20 }}>
         {[
-          { n: favList.length, l:"Favori"     },
-          { n: userProfile.reviewCount||0, l:"Yorum"  },
-          { n: userProfile.bizCount||0,    l:"İşletme"},
+          { n: favList.length, l:"Favori" },
+          { n: userProfile.reviewCount||0, l:"Yorum" },
         ].map((s,i,arr) => (
           <div key={s.l} style={{ flex:1, padding:"14px 8px", textAlign:"center",
             borderRight: i<arr.length-1 ? `1px solid ${C.border}` : "none" }}>
@@ -1825,22 +1867,7 @@ function ProfilePage({ userProfile, onEdit, favorites, onBusiness, loggedIn, onL
               ✏️ Profili Düzenle
             </button>
 
-            {/* Dil Seçimi */}
-            <div style={{ background:C.white, border:`1px solid ${C.border}`,
-              borderRadius:13, padding:"13px 16px", marginBottom:12,
-              display:"flex", alignItems:"center", justifyContent:"space-between" }}>
-              <div style={{ fontSize:13, fontWeight:600, color:C.text }}>🌐 Dil / Language</div>
-              <div style={{ display:"flex", gap:6 }}>
-                {["TR","EN"].map(l=>(
-                  <div key={l} onClick={()=>onLangChange(l)} style={{ padding:"5px 14px",
-                    borderRadius:8, fontSize:12, fontWeight:700, cursor:"pointer",
-                    background: lang===l ? C.red : C.redPale,
-                    color: lang===l ? C.white : C.textSub,
-                    border:`1px solid ${lang===l?C.red:C.border}` }}>{l}</div>
-                ))}
-              </div>
-            </div>
-
+           
             {/* Bildirim Tercihleri */}
             <NotifPrefs/>
 
@@ -1859,39 +1886,18 @@ function ProfilePage({ userProfile, onEdit, favorites, onBusiness, loggedIn, onL
               <div style={{ fontSize:12, color:C.textMute }}>→</div>
             </div>
 
-            {/* İşletme sahip kartı */}
-            {myBusiness ? (
-              <div onClick={onMyBusiness} style={{ background:C.white,
-                border:`1.5px solid #F59E0B`, borderRadius:16, padding:"14px 16px",
-                cursor:"pointer", display:"flex", gap:12, alignItems:"center",
-                boxShadow:"0 2px 8px rgba(245,158,11,0.12)", marginBottom:12 }}>
-                <div style={{ width:44, height:44, borderRadius:12, flexShrink:0,
-                  background:"linear-gradient(135deg,#FEF3C7,#FDE68A)",
-                  display:"flex", alignItems:"center", justifyContent:"center", fontSize:22 }}>
-                  {myBusiness.img}
-                </div>
-                <div style={{ flex:1 }}>
-                  <div style={{ fontSize:12, fontWeight:700, color:"#92400E", marginBottom:2 }}>
-                    ⭐ İşletme Profilim
-                  </div>
-                  <div style={{ fontSize:13, fontWeight:700, color:C.text }}>{myBusiness.name}</div>
-                  <div style={{ fontSize:11, color:C.textMute }}>📍 {myBusiness.city}</div>
-                </div>
-                <div style={{ fontSize:12, color:C.textMute }}>→</div>
+            {/* İşletme ekle butonu */}
+            <div onClick={onRegisterBiz} style={{ border:`2px dashed #F59E0B`,
+              borderRadius:14, padding:"14px 16px", textAlign:"center",
+              background:"#FFFBEB", cursor:"pointer", marginBottom:12 }}>
+              <div style={{ fontSize:20, marginBottom:6 }}>🏢</div>
+              <div style={{ fontSize:12, fontWeight:700, color:"#92400E", marginBottom:3 }}>
+                İşletmenizi Ekleyin
               </div>
-            ) : (
-              <div onClick={onRegisterBiz} style={{ border:`2px dashed #F59E0B`,
-                borderRadius:14, padding:"14px 16px", textAlign:"center",
-                background:"#FFFBEB", cursor:"pointer" }}>
-                <div style={{ fontSize:20, marginBottom:6 }}>🏢</div>
-                <div style={{ fontSize:12, fontWeight:700, color:"#92400E", marginBottom:3 }}>
-                  İşletmenizi Ekleyin
-                </div>
-                <div style={{ fontSize:11, color:"#A16207" }}>
-                  Ücretsiz listelenin, müşteri bulun →
-                </div>
+              <div style={{ fontSize:11, color:"#A16207" }}>
+                Ücretsiz listelenin, müşteri bulun →
               </div>
-            )}
+            </div>
           </>
         )}
 
@@ -1936,6 +1942,15 @@ function EditProfile({ profile, onSave, onBack }) {
   const set = (k,v) => setForm(f=>({...f,[k]:v}));
   const avatars = ["👤","👨","👩","👨‍💼","👩‍💼","🧑‍⚕️","👨‍🍳","👩‍🍳","🧑‍🔧"];
 
+  const [photoPreview, setPhotoPreview] = useState(form.photoURL||null);
+  const handlePhoto = e => {
+    const file = e.target.files[0];
+    if (!file) return;
+    const reader = new FileReader();
+    reader.onload = ev => { setPhotoPreview(ev.target.result); set("photoURL", ev.target.result); };
+    reader.readAsDataURL(file);
+  };
+
   return (
     <div style={{ height:"100%", display:"flex", flexDirection:"column", background:C.white }}>
       <div style={{ background:`linear-gradient(135deg,${C.red},${C.redDark})`,
@@ -1949,17 +1964,36 @@ function EditProfile({ profile, onSave, onBack }) {
       </div>
 
       <div style={{ flex:1, overflowY:"auto", padding:"22px 20px" }}>
+        {/* Profil fotoğrafı yükleme */}
+        <div style={{ marginBottom:20, display:"flex", flexDirection:"column", alignItems:"center", gap:10 }}>
+          <div style={{ width:80, height:80, borderRadius:"50%", overflow:"hidden",
+            border:`2.5px solid ${C.border}`, background:C.redPale,
+            display:"flex", alignItems:"center", justifyContent:"center",
+            fontSize:36, flexShrink:0 }}>
+            {photoPreview
+              ? <img src={photoPreview} alt="profil" style={{ width:"100%", height:"100%", objectFit:"cover" }}/>
+              : (form.avatar||"👤")}
+          </div>
+          <label style={{ display:"flex", alignItems:"center", gap:6,
+            background:C.redPale, border:`1px solid ${C.border}`,
+            borderRadius:10, padding:"7px 16px", fontSize:12, fontWeight:700,
+            color:C.red, cursor:"pointer" }}>
+            📷 Fotoğraf Yükle
+            <input type="file" accept="image/*" onChange={handlePhoto} style={{ display:"none" }}/>
+          </label>
+        </div>
         {/* Avatar seçimi */}
         <div style={{ marginBottom:20 }}>
           <div style={{ fontSize:11, fontWeight:700, color:C.textSub,
             letterSpacing:0.5, marginBottom:10 }}>Avatar Seç</div>
           <div style={{ display:"flex", gap:8, flexWrap:"wrap" }}>
             {avatars.map(a=>(
-              <div key={a} onClick={()=>set("avatar",a)} style={{ width:44, height:44,
+              <div key={a} onClick={()=>{ set("avatar",a); setPhotoPreview(null); set("photoURL",""); }}
+                style={{ width:44, height:44,
                 borderRadius:"50%", display:"flex", alignItems:"center", justifyContent:"center",
                 fontSize:22, cursor:"pointer",
-                background: form.avatar===a ? C.red : C.redPale,
-                border:`2px solid ${form.avatar===a ? C.red : C.border}` }}>
+                background: form.avatar===a && !photoPreview ? C.red : C.redPale,
+                border:`2px solid ${form.avatar===a && !photoPreview ? C.red : C.border}` }}>
                 {a}
               </div>
             ))}
@@ -2086,11 +2120,11 @@ function BusinessDetail({ business, onBack, favorites, toggleFav, reviews, onAdd
                   fontSize: i===0 ? 56 : 40,
                   cursor:"pointer", position:"relative" }}>
                   {g}
-                  {i===0 && business.premium && (
+                  {i===0 && business.onaylı && (
                     <div style={{ position:"absolute", top:10, left:10,
                       background:"linear-gradient(135deg,#F59E0B,#D97706)",
                       borderRadius:8, padding:"3px 8px",
-                      fontSize:9, fontWeight:700, color:C.white }}>⭐ PREMİUM</div>
+                      fontSize:9, fontWeight:700, color:C.white }}>✅ONAYLANMIŞ</div>
                   )}
                 </div>
               ))}
@@ -2348,11 +2382,11 @@ function BusinessDetail({ business, onBack, favorites, toggleFav, reviews, onAdd
                     {similar.map(b=>{
                       const open = isOpenNow(b.hours);
                       return (
-                        <div key={b.id} onClick={()=>onBusiness&&onBusiness(b)} style={{ background:C.white, border:`1.5px solid ${b.premium?"#F59E0B":C.border}`,
+                        <div key={b.id} onClick={()=>onBusiness&&onBusiness(b)} style={{ background:C.white, border:`1.5px solid ${b.onaylı?"#F59E0B":C.border}`,
                           borderRadius:14, padding:"12px 14px",
                           display:"flex", gap:12, alignItems:"center",
                           cursor:"pointer",
-                          boxShadow: b.premium?"0 2px 8px rgba(245,158,11,0.15)":"none" }}>
+                          boxShadow: b.onaylı?"0 2px 8px rgba(245,158,11,0.15)":"none" }}>
                           <div style={{ width:44, height:44, borderRadius:12, flexShrink:0,
                             background:`linear-gradient(135deg,${C.redPale},#FFF5F6)`,
                             border:`1px solid ${C.border}`,
@@ -2365,11 +2399,11 @@ function BusinessDetail({ business, onBack, favorites, toggleFav, reviews, onAdd
                               <div style={{ fontSize:13, fontWeight:700, color:C.text,
                                 whiteSpace:"nowrap", overflow:"hidden",
                                 textOverflow:"ellipsis" }}>{b.name}</div>
-                              {b.premium && (
+                              {b.onaylı && (
                                 <span style={{ background:"linear-gradient(135deg,#F59E0B,#D97706)",
                                   borderRadius:5, padding:"1px 6px",
                                   fontSize:8, fontWeight:700, color:C.white,
-                                  flexShrink:0 }}>⭐</span>
+                                  flexShrink:0 }}>✅</span>
                               )}
                             </div>
                             <div style={{ fontSize:11, color:C.textMute, marginBottom:3 }}>
@@ -2663,7 +2697,9 @@ function AuthScreen({ onAuth, onBack }) {
 
   const handleSubmit = () => {
     if (!form.email || !form.password) { setError("E-posta ve şifre zorunludur."); return; }
+    if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(form.email)) { setError("Geçerli bir e-posta adresi girin."); return; }
     if (mode==="signup" && !form.name) { setError("Ad soyad zorunludur."); return; }
+    if (form.password.length < 6) { setError("Şifre en az 6 karakter olmalıdır."); return; }
     setError("");
     onAuth({
       name: form.name || form.email.split("@")[0],
@@ -2692,7 +2728,7 @@ function AuthScreen({ onAuth, onBack }) {
           {mode==="login" ? "Hoş Geldiniz" : "Hesap Oluştur"}
         </div>
         <div style={{ fontSize:12, color:"rgba(255,255,255,0.65)" }}>
-          {mode==="login" ? "Hesabınıza giriş yapın" : "Türk Rehberi'ne katılın"}
+          {mode==="login" ? "Hesabınıza giriş yapın" : "Amerika Rehberi'ne katılın"}
         </div>
       </div>
 
@@ -2815,7 +2851,7 @@ function AuthScreen({ onAuth, onBack }) {
 function PostJob({ onBack, onSuccess, userName }) {
   const [form, setForm] = useState({
     title:"", company:"", type:"Tam Zamanlı", location:"",
-    state:"", salaryMin:"", salaryMax:"", description:"", tags:"",
+    state:"", description:"", tags:"", phone:"",
   });
   const [submitted, setSubmitted] = useState(false);
   const set = (k,v) => setForm(f=>({...f,[k]:v}));
@@ -2909,23 +2945,7 @@ function PostJob({ onBack, onSuccess, userName }) {
           </div>
         </div>
 
-        {/* Maaş */}
-        <div style={{ marginBottom:14 }}>
-          <div style={{ fontSize:11, fontWeight:700, color:C.textSub,
-            letterSpacing:0.5, marginBottom:6 }}>Maaş Aralığı (USD)</div>
-          <div style={{ display:"flex", gap:8 }}>
-            <input value={form.salaryMin} onChange={e=>set("salaryMin",e.target.value)}
-              placeholder="Min ($45K)" type="text"
-              style={{ flex:1, padding:"11px 14px", borderRadius:11,
-                border:`1.5px solid ${C.border}`, background:C.redPale,
-                fontSize:13, color:C.text, outline:"none" }}/>
-            <input value={form.salaryMax} onChange={e=>set("salaryMax",e.target.value)}
-              placeholder="Max ($60K)" type="text"
-              style={{ flex:1, padding:"11px 14px", borderRadius:11,
-                border:`1.5px solid ${C.border}`, background:C.redPale,
-                fontSize:13, color:C.text, outline:"none" }}/>
-          </div>
-        </div>
+    
 
         {/* Açıklama */}
         <div style={{ marginBottom:14 }}>
@@ -2938,6 +2958,16 @@ function PostJob({ onBack, onSuccess, userName }) {
               borderRadius:11, border:`1.5px solid ${C.border}`,
               background:C.redPale, fontSize:14, color:C.text,
               outline:"none", resize:"vertical", fontFamily:"system-ui", lineHeight:1.6 }}/>
+        </div>
+
+        <div style={{ marginBottom:14 }}>
+          <div style={{ fontSize:11, fontWeight:700, color:C.textSub,
+            letterSpacing:0.5, marginBottom:6 }}>İletişim Telefonu *</div>
+          <input value={form.phone} onChange={e=>set("phone",e.target.value)}
+            placeholder="+1 (212) 555-0101" type="tel"
+            style={{ width:"100%", boxSizing:"border-box", padding:"11px 14px",
+              borderRadius:11, border:`1.5px solid ${C.border}`,
+              background:C.redPale, fontSize:14, color:C.text, outline:"none" }}/>
         </div>
 
         <div style={{ marginBottom:14 }}>
@@ -2999,7 +3029,7 @@ function PostEvent({ onBack, onSuccess }) {
 
         {[
           { icon:"🔔", title:"Bildirim Gönder", desc:`Tüm ${form.state||"bölge"} kullanıcılarına bildirim git`, price:"$15", color:C.turq },
-          { icon:"⭐", title:"Öne Çıkar", desc:"Ana sayfada 7 gün üst sırada görün", price:"$25", color:"#F59E0B" },
+          { icon:"✅", title:"Öne Çıkar", desc:"Ana sayfada 7 gün üst sırada görün", price:"$25", color:"#F59E0B" },
           { icon:"🚀", title:"Tam Paket", desc:"Bildirim + Öne çıkarma + Bu haftanın etkinliği rozeti", price:"$40", color:C.red, best:true },
         ].map(pkg=>(
           <div key={pkg.title} style={{ background:C.white,
@@ -3189,10 +3219,10 @@ function BusinessOwnerProfile({ business, onBack, reviews, onEdit }) {
           <div style={{ flex:1 }}>
             <div style={{ display:"flex", alignItems:"center", gap:8 }}>
               <div style={{ fontSize:18, fontWeight:700, color:C.white }}>{business.name}</div>
-              {business.premium && (
+              {business.onaylı && (
                 <span style={{ background:"linear-gradient(135deg,#F59E0B,#D97706)",
                   borderRadius:6, padding:"2px 8px", fontSize:9, fontWeight:700, color:C.white }}>
-                  ⭐ PREMİUM
+                  ✅ONAYLANMIŞ
                 </span>
               )}
             </div>
@@ -3211,7 +3241,7 @@ function BusinessOwnerProfile({ business, onBack, reviews, onEdit }) {
       <div style={{ background:C.white, borderBottom:`1px solid ${C.border}`,
         display:"flex", marginBottom:1 }}>
         {[
-          { n:avgRating, l:"Ortalama Puan", icon:"⭐" },
+          { n:avgRating, l:"Ortalama Puan", icon:"✅" },
           { n:business.reviews + bizReviews.length, l:"Toplam Yorum", icon:"💬" },
           { n:"—", l:"Bu Ay Görüntülenme", icon:"👁" },
         ].map((s,i,arr)=>(
@@ -3267,13 +3297,13 @@ function BusinessOwnerProfile({ business, onBack, reviews, onEdit }) {
           ))}
         </div>
 
-        {/* Premium yükseltme kartı */}
-        {!business.premium && (
+        {/* onaylı yükseltme kartı */}
+        {!business.onaylı && (
           <div style={{ background:`linear-gradient(135deg,#FEF3C7,#FDE68A)`,
             border:"1.5px solid #F59E0B", borderRadius:16, padding:"16px",
             marginBottom:14 }}>
             <div style={{ fontSize:14, fontWeight:700, color:"#92400E", marginBottom:12 }}>
-              ⭐ Premium'a Yüksel — $29/ay
+              ✅ Onaylanmış Firmaya Geç — $9.99/ay
             </div>
             <div style={{ display:"flex", gap:8, marginBottom:14 }}>
               {/* Ücretsiz */}
@@ -3295,11 +3325,11 @@ function BusinessOwnerProfile({ business, onBack, reviews, onEdit }) {
                   </div>
                 ))}
               </div>
-              {/* Premium */}
+              {/* onaylı */}
               <div style={{ flex:1, background:"linear-gradient(135deg,#F59E0B22,#D9770622)",
                 border:"1.5px solid #F59E0B", borderRadius:12, padding:"12px 10px" }}>
                 <div style={{ fontSize:11, fontWeight:700, color:"#92400E",
-                  marginBottom:8, textAlign:"center" }}>⭐ Premium</div>
+                  marginBottom:8, textAlign:"center" }}>✅ onaylı</div>
                 {[
                   ["✅","Temel listeleme"],
                   ["✅","Telefon & adres"],
@@ -3319,7 +3349,7 @@ function BusinessOwnerProfile({ business, onBack, reviews, onEdit }) {
             <button style={{ width:"100%", border:"none", borderRadius:11,
               padding:"11px", fontSize:13, fontWeight:700, cursor:"pointer",
               background:"linear-gradient(135deg,#F59E0B,#D97706)", color:C.white }}>
-              $29/ay — Premium'a Geç 🚀
+              $9.99/ay veya $99.99/yıl — Onaylanmış Firmaya Geç 🚀 🚀
             </button>
           </div>
         )}
@@ -3589,22 +3619,7 @@ function SearchOverlay({ history, onSelect, onClear, onClose }) {
             ))}
           </div>
         )}
-        <div style={{ padding:"14px 18px 20px" }}>
-          <div style={{ fontSize:10, fontWeight:700, color:C.textMute,
-            letterSpacing:1.5, textTransform:"uppercase", marginBottom:10 }}>Popüler Kategoriler</div>
-          <div style={{ display:"flex", flexWrap:"wrap", gap:8 }}>
-            {suggestions.map(s=>(
-              <div key={s.label} onClick={()=>onSelect(s.label)}
-                style={{ display:"flex", alignItems:"center", gap:6,
-                  background:C.redPale, border:`1px solid ${C.border}`,
-                  borderRadius:20, padding:"7px 14px",
-                  fontSize:12, fontWeight:600, color:C.textSub, cursor:"pointer" }}>
-                <span>{s.icon}</span><span>{s.label}</span>
               </div>
-            ))}
-          </div>
-        </div>
-      </div>
     </div>
   );
 }
@@ -3914,7 +3929,7 @@ export default function PusulaApp() {
   const [extraJobs,   setExtraJobs]   = useState([]); // FIX 4: dynamic jobs
 
   const [notifications, setNotifications] = useState([
-    { icon:"⭐", title:"Bosphorus Kitchen yorumunuza yanıt verdi", body:"\"Teşekkürler, sizi tekrar görmek isteriz!\"", time:"2 saat önce",   read:false },
+    { icon:"✅", title:"Bosphorus Kitchen yorumunuza yanıt verdi", body:"\"Teşekkürler, sizi tekrar görmek isteriz!\"", time:"2 saat önce",   read:false },
     { icon:"🔔", title:"Yeni iş ilanı: Türkçe Satış Temsilcisi",   body:"Paterson, NJ · $45K–$60K",                   time:"5 saat önce",   read:false },
     { icon:"✅", title:"İşletmeniz onaylandı",                      body:"Pusula rehberine eklendi.",                   time:"1 gün önce",    read:false },
     { icon:"💬", title:"Yorumunuz beğenildi",                       body:"Dr. Ayşe Kaya yorumunuz 3 kişi faydalı buldu.", time:"2 gün önce",  read:true  },
@@ -4003,6 +4018,7 @@ export default function PusulaApp() {
       type: form.type,
       salary: form.salaryMin && form.salaryMax ? `$${form.salaryMin}–$${form.salaryMax}` : "Belirtilmedi",
       tags: form.tags ? form.tags.split(",").map(t=>t.trim()).filter(Boolean) : [],
+      phone: form.phone,
       posted: "Az önce",
       urgent: false,
     };
@@ -4026,7 +4042,7 @@ export default function PusulaApp() {
       reviews: 0,
       tags: form.tags ? form.tags.split(",").map(t=>t.trim()).filter(Boolean) : [],
       verified: false,
-      premium: false,
+      onaylı: false,
       img: catInfo.icon||"🏢",
       phone: form.phone,
       address: `${form.address}, ${form.city}, ${form.state} ${form.zip}`,
