@@ -259,38 +259,12 @@ const H_OFFICE= [0,1,2,3,4,5,6].map(d=>({ open: d>=1&&d<=5, from:"09:00", to:"18
 const H_247   = [0,1,2,3,4,5,6].map(d=>({ open: true, from:"00:00", to:"23:59" }));
 const H_BEAUTY= [0,1,2,3,4,5,6].map(d=>({ open: d!==0&&d!==1, from:"10:00", to:"19:00" }));
 
-const businesses = [
-  { id:1,  name:"Bosphorus Kitchen",   cat:"restaurant",  state:"New York",   city:"Brooklyn",  rating:4.9, reviews:412, tags:["Aile Dostu","Otantik","Türkçe Hizmet"],           verified:true,  onaylı:true,  img:"🍽️", phone:"+1 (718) 555-0101", address:"143 Atlantic Ave, Brooklyn, NY 11201",         desc:"1997'den beri otantik Türk mutfağı. Helal sertifikalı, aile dostu ortam.",    hours:H_REST,   gallery:["🍽️","🥙","🫕","🍢","🧆"] },
-  { id:2,  name:"Av. Kemal Arslan",    cat:"lawyer",      state:"New Jersey", city:"Paterson",  rating:4.9, reviews:134, tags:["Göçmenlik","Türkçe"],                verified:true,  onaylı:true,  img:"⚖️", phone:"+1 (973) 555-0202", address:"250 Main St, Paterson, NJ 07501",              desc:"20+ yıl göçmenlik ve iş hukuku deneyimi. Türkçe hizmet veriyoruz.",           hours:H_OFFICE, gallery:["⚖️","📋","🏛️","📜","🤝"] },
-  { id:3,  name:"Dr. Ayşe Kaya",       cat:"doctor",      state:"Texas",      city:"Houston",   rating:4.8, reviews:267, tags:["Aile Hekimi","Türkçe"],              verified:true,  onaylı:false, img:"🏥", phone:"+1 (713) 555-0303", address:"3800 Kirby Dr, Houston, TX 77098",             desc:"Aile hekimliği uzmanı. Türkçe ve İngilizce muayene imkânı.",                  hours:H_OFFICE, gallery:["🏥","👩‍⚕️","💊","🩺","❤️‍🩹"] },
-  { id:4,  name:"Boğaz Emlak",         cat:"realestate",  state:"New York",   city:"Manhattan", rating:4.8, reviews:74,  tags:["Satış","Kiralık"],                   verified:true,  onaylı:true,  img:"🏠", phone:"+1 (212) 555-0404", address:"575 Lexington Ave, New York, NY 10022",        desc:"NYC'de Türk emlak danışmanlığı. Satış, kiralama ve yatırım.",                 hours:H_OFFICE, gallery:["🏠","🏙️","🗝️","📐","🏗️"] },
-  { id:5,  name:"İstanbul Market",     cat:"market",      state:"Florida",    city:"Miami",     rating:4.6, reviews:98,  tags:["Türk Ürünleri","Organik"],             verified:false, onaylı:false, img:"🛒", phone:"+1 (305) 555-0505", address:"1234 Brickell Ave, Miami, FL 33131",           desc:"Türkiye'den ithal ürünler, helal et, taze sebze ve meyve.",                   hours:H_REST,   gallery:["🛒","🫙","🧀","🫒","🍬"] },
-  { id:6,  name:"Anadolu Muhasebe",    cat:"accountant",  state:"New Jersey", city:"Paterson",  rating:4.8, reviews:88,  tags:["Vergi","Şirket Kurma"],              verified:true,  onaylı:false, img:"📊", phone:"+1 (973) 555-0606", address:"100 Hamilton Plaza, Paterson, NJ 07505",       desc:"Vergi beyannamesi, şirket kurma, muhasebe danışmanlığı.",                     hours:H_OFFICE, gallery:["📊","💼","🖥️","📁","🗂️"] },
-  { id:7,  name:"Marmara Elektrik",    cat:"homeservice", state:"New York",   city:"Brooklyn",  rating:4.7, reviews:63,  tags:["Elektrikçi","Lisanslı","7/24"],      verified:true,  onaylı:false, img:"⚡", phone:"+1 (718) 555-0707", address:"78 Court St, Brooklyn, NY 11201",              desc:"Lisanslı elektrikçi. Acil servis 7/24, ücretsiz keşif.",                      hours:H_247,    gallery:["⚡","🔌","💡","🔧","🛠️"] },
-  { id:8,  name:"İstanbul Tesisat",    cat:"homeservice", state:"New Jersey", city:"Paterson",  rating:4.8, reviews:47,  tags:["Tesisatçı","Acil","Garantili"],      verified:true,  onaylı:false, img:"🔧", phone:"+1 (973) 555-0808", address:"55 Broadway, Paterson, NJ 07501",              desc:"Su tesisatı, ısıtma sistemleri, acil müdahale.",                              hours:H_247,    gallery:["🔧","🚿","🪠","🔩","🏠"] },
-  { id:9,  name:"Ankara Oto Servis",   cat:"homeservice", state:"California", city:"L.A.",      rating:4.7, reviews:112, tags:["Oto Servis","BMW","Mercedes"],        verified:true,  onaylı:true,  img:"🚗", phone:"+1 (213) 555-0909", address:"6801 Hollywood Blvd, Los Angeles, CA 90028",   desc:"Alman araçları uzmanı. BMW, Mercedes, Audi servisi.",                         hours:H_OFFICE, gallery:["🚗","🔩","🛞","⚙️","🏎️"] },
-  { id:10, name:"Türk Boya & Tadilat", cat:"homeservice", state:"New York",   city:"Queens",    rating:4.6, reviews:38,  tags:["Boyacı","Tadilat","Ücretsiz Keşif"], verified:false, onaylı:false, img:"🪣", phone:"+1 (718) 555-1010", address:"37-10 Junction Blvd, Queens, NY 11372",        desc:"İç ve dış cephe boya, tadilat, tamirat hizmetleri.",                          hours:H_OFFICE, gallery:["🪣","🖌️","🏠","🎨","🪚"] },
-  { id:11, name:"Saç Studio İstanbul", cat:"beauty",      state:"New York",   city:"Brooklyn",  rating:4.9, reviews:203, tags:["Kuaför","Randevu","Türkçe Hizmet"],           verified:true,  onaylı:true,  img:"💇", phone:"+1 (718) 555-1111", address:"192 Bedford Ave, Brooklyn, NY 11211",          desc:"Türk ustalığıyla saç kesimi, renk ve bakım hizmetleri.",                      hours:H_BEAUTY, gallery:["💇","✂️","💆","💅","🪮"] },
-  { id:12, name:"Mavi Berber",         cat:"beauty",      state:"New Jersey", city:"Paterson",  rating:4.8, reviews:156, tags:["Berber","Erkek","Sakal"],            verified:true,  onaylı:false, img:"✂️", phone:"+1 (973) 555-1212", address:"88 Market St, Paterson, NJ 07501",             desc:"Klasik Türk berberi. Saç, sakal, bıyık şekillendirme.",                       hours:H_BEAUTY, gallery:["✂️","🪒","💈","🧔","🪮"] },
-];
+const businesses = [];
 
-const jobs = [
-  { id:1, title:"Türkçe Konuşan Satış Temsilcisi", company:"AnadoluTech Inc.",  location:"New York, NY",    type:"Tam Zamanlı", salary:"$45K–$60K",   tags:["Türkçe","Satış","Remote OK"],  posted:"2 gün önce",  urgent:true  },
-  { id:2, title:"Aşçı / Sous Chef",                company:"Bosphorus Kitchen", location:"Brooklyn, NY",    type:"Tam Zamanlı", salary:"$18–$24/saat", tags:["Türk Mutfağı","Tecrübeli"],   posted:"3 gün önce",  urgent:false },
-  { id:3, title:"Muhasebe Asistanı",               company:"Anadolu Muhasebe",  location:"Paterson, NJ",    type:"Yarı Zamanlı",salary:"$20–$25/saat", tags:["QuickBooks","Türkçe"],        posted:"5 gün önce",  urgent:false },
-  { id:4, title:"Yazılım Geliştirici (React)",      company:"TurcoTech",         location:"Remote",          type:"Tam Zamanlı", salary:"$80K–$110K",   tags:["React","Node.js","Remote"],   posted:"1 gün önce",  urgent:true  },
-  { id:5, title:"Elektrikçi (Lisanslı)",            company:"Marmara Elektrik",  location:"New York, NY",    type:"Tam Zamanlı", salary:"$35–$50/saat", tags:["Lisanslı","NYC","Tecrübeli"], posted:"1 hafta önce",urgent:false },
-  { id:6, title:"Türkçe Öğretmeni",                company:"Özel Ders",          location:"Online / Hybrid", type:"Serbest",     salary:"$30–$50/saat", tags:["Türkçe","Öğretmen","Online"], posted:"4 gün önce",  urgent:false },
-];
+const jobs = [];
 
-const events = [
-  { id:1, title:"Türkiye Cumhuriyet Bayramı Kutlaması", org:"ATAA New York",        date:"29 Ekim 2026",  location:"Manhattan, NY", cat:"Ulusal Bayram", img:"🇹🇷", attendees:340, free:false, price:"$25"    },
-  { id:2, title:"Türk Film Festivali — Açılış Gecesi",  org:"Turkish Cultural Ctr", date:"15 Kasım 2026", location:"Brooklyn, NY",  cat:"Kültür & Sanat",img:"🎬", attendees:180, free:false, price:"$15"    },
-  { id:3, title:"Türk Mutfağı Workshopu",               org:"Bosphorus Kitchen",    date:"8 Kasım 2026",  location:"Brooklyn, NY",  cat:"Yemek",         img:"🍽️", attendees:45,  free:false, price:"$40"    },
-  { id:4, title:"Türk-Amerikan İş Ağı Buluşması",       org:"TABA",                 date:"12 Kasım 2026", location:"Midtown, NY",   cat:"Networking",    img:"🤝", attendees:120, free:true,  price:null     },
-  { id:5, title:"Çocuklar için Türkçe Dil Kursu",       org:"Türk Okulu NY",        date:"Her Cumartesi", location:"Queens, NY",    cat:"Kültür & Sanat",img:"📚", attendees:60,  free:false, price:"$80/ay" },
-  { id:6, title:"Türk Müziği Gecesi",                   org:"Boğaziçi Kültür",      date:"20 Kasım 2026", location:"New Jersey",    cat:"Müzik",         img:"🎵", attendees:200, free:false, price:"$30"    },
-];
+const events = [];
+
 
 /* ── Yardımcılar ── */
 const Stars = ({ r }) => (
@@ -502,7 +476,7 @@ function Onboarding({ onDone }) {
   );
 }
 
-function Home({ userState, userCity, onBusiness, onTab, favorites, toggleFav, onRegister, onNotifications, unreadCount, searchHistory, onAddSearchHistory, onClearHistory, lang, onLocationChange }) {
+function Home({ userState, userCity, onBusiness, onTab, favorites, toggleFav, onRegister, onNotifications, unreadCount, searchHistory, onAddSearchHistory, onClearHistory, lang, onLocationChange, dbBusinesses=[], dbJobs=[], dbEvents=[] }) {
   const [selCat,       setSelCat]       = useState(null);
   const [search,       setSearch]       = useState("");
   const [showFilters,  setShowFilters]  = useState(false);
@@ -517,7 +491,8 @@ function Home({ userState, userCity, onBusiness, onTab, favorites, toggleFav, on
     filterState, filterCity, filterVerify, sortBy!=="default"
   ].filter(Boolean).length;
 
-  const filtered = businesses
+  const allBusinesses = [...businesses, ...dbBusinesses];
+  const filtered = allBusinesses
     .filter(b => {
       if (selCat && b.cat !== selCat) return false;
       const q = search.toLocaleLowerCase("tr");
@@ -542,7 +517,7 @@ function Home({ userState, userCity, onBusiness, onTab, favorites, toggleFav, on
     ? (NEARBY_CITIES[Object.keys(NEARBY_CITIES).find(k=>k.toLowerCase()===filterCity.toLowerCase())] || [])
     : [];
 
-  const featured = businesses.filter(b=>b.verified && b.rating>=4.8).slice(0,4);
+  const featured = allBusinesses.filter(b=>b.verified && b.rating>=4.8).slice(0,4);
   const activeCat = categories.find(c=>c.id===selCat);
   const isFiltering = selCat || search.trim() || activeFilterCount > 0;
 
@@ -800,7 +775,7 @@ function Home({ userState, userCity, onBusiness, onTab, favorites, toggleFav, on
                   cursor:"pointer", marginTop:-12 }}>Tümü →</div>
               </div>
               <div style={{ display:"flex", gap:12, overflowX:"auto", paddingBottom:4 }}>
-                {events.slice(0,4).map(ev => (
+                {[...events, ...dbEvents].slice(0,4).map(ev => (
                   <div key={ev.id} style={{ flexShrink:0, width:160,
                     background:C.white, border:`1px solid ${C.border}`,
                     borderRadius:16, overflow:"hidden", cursor:"pointer",
@@ -1243,12 +1218,13 @@ function Jobs({ onBack, onPost, extraJobs=[] }) {
   );
 }
 
-function Events({ onBack, onPost }) {
+function Events({ onBack, onPost, dbEvents=[] }) {
   const [filter, setFilter] = useState("Tümü");
   const [rsvp, setRsvp] = useState([]); // katılınan etkinlik id'leri
   const toggleRsvp = id => setRsvp(p=>p.includes(id)?p.filter(x=>x!==id):[...p,id]);
   const catList = ["Tümü","Ulusal Bayram","Kültür & Sanat","Yemek","Networking","Müzik"];
-  const filtered = filter==="Tümü" ? events : events.filter(e=>e.cat===filter);
+  const allEvents = [...events, ...dbEvents];
+  const filtered = filter==="Tümü" ? allEvents : allEvents.filter(e=>e.cat===filter);
 
   return (
     <div style={{ height:"100%", display:"flex", flexDirection:"column", background:C.bgSoft }}>
@@ -3998,6 +3974,9 @@ function AdminPanel({ onBack, pendingBiz }) {
 
 export default function PusulaApp() {
   const [showSplash,  setShowSplash]  = useState(true);
+  const [dbBusinesses, setDbBusinesses] = useState([]);
+  const [dbJobs,       setDbJobs]       = useState([]);
+  const [dbEvents,     setDbEvents]     = useState([]);
   const [screen,      setScreen]      = useState("onboarding");
   const [tab,         setTab]         = useState("home");
   const [business,    setBusiness]    = useState(null);
@@ -4012,7 +3991,28 @@ export default function PusulaApp() {
   const [viewUser,    setViewUser]    = useState(null);
   const [searchHistory, setSearchHistory] = useState(["Restoran","Avukat","Brooklyn"]);
   const [extraJobs,   setExtraJobs]   = useState([]); // FIX 4: dynamic jobs
-
+useEffect(() => {
+    const fetchData = async () => {
+      const { data: biz } = await supabase.from("businesses").select("*");
+      const { data: job } = await supabase.from("jobs").select("*");
+      const { data: evt } = await supabase.from("events").select("*");
+      if (biz) setDbBusinesses(biz.map(b=>({
+        ...b, cat: b.category, desc: b.description,
+        img: categories.find(c=>c.id===b.category)?.icon || "🏢",
+        onaylı: b.featured, rating: b.rating||0, reviews: b.reviews||0,
+        tags: b.tags||[], gallery: [categories.find(c=>c.id===b.category)?.icon||"🏢"],
+      })));
+      if (job) setDbJobs(job.map(j=>({
+        ...j, posted: new Date(j.created_at).toLocaleDateString("tr-TR"),
+        urgent: false, tags: j.tags||[],
+      })));
+      if (evt) setDbEvents(evt.map(e=>({
+        ...e, cat: e.category, img: "🎉", attendees: 0,
+        free: e.free, price: e.price||null,
+      })));
+    };
+    fetchData();
+  }, []);
   const [notifications, setNotifications] = useState([
     { icon:"✅", title:"Bosphorus Kitchen yorumunuza yanıt verdi", body:"\"Teşekkürler, sizi tekrar görmek isteriz!\"", time:"2 saat önce",   read:false },
     { icon:"🔔", title:"Yeni iş ilanı: Türkçe Satış Temsilcisi",   body:"Paterson, NJ · $45K–$60K",                   time:"5 saat önce",   read:false },
@@ -4208,8 +4208,8 @@ export default function PusulaApp() {
   if (screen==="bizprofile")  return <W><BusinessOwnerProfile business={myBusiness||businesses[0]} onBack={()=>setScreen("main")} reviews={reviews} onEdit={()=>setScreen("register")}/></W>;
   if (viewUser)               return <W><UserProfilePage user={viewUser} reviews={reviews} onBack={()=>setViewUser(null)}/></W>;
 
-  if (subScreen==="jobs")   return <W><Jobs   onBack={()=>setSubScreen(null)} onPost={loggedIn?()=>setScreen("postjob"):()=>setScreen("auth")} extraJobs={extraJobs}/></W>;
-  if (subScreen==="events") return <W><Events onBack={()=>setSubScreen(null)} onPost={loggedIn?()=>setScreen("postevent"):()=>setScreen("auth")}/></W>;
+  if (subScreen==="jobs")   return <W><Jobs   onBack={()=>setSubScreen(null)} onPost={loggedIn?()=>setScreen("postjob"):()=>setScreen("auth")} extraJobs={[...extraJobs,...dbJobs]}/></W>;
+  if (subScreen==="events") return <W><Events onBack={()=>setSubScreen(null)} onPost={loggedIn?()=>setScreen("postevent"):()=>setScreen("auth")} dbEvents={dbEvents}/></W>;
 
   if (business) return (
     <W>
@@ -4222,7 +4222,10 @@ export default function PusulaApp() {
         onViewUser={setViewUser}
         onBusiness={openBusiness}
         isOwner={myBusiness && myBusiness.id===business.id}
-        lang={lang}/>
+        lang={lang}
+              dbBusinesses={dbBusinesses}
+              dbJobs={dbJobs}
+              dbEvents={dbEvents}/>
       {reportModal && <ReportModal type={reportModal.type} onClose={()=>setReportModal(null)}/>}
     </W>
   );
@@ -4248,7 +4251,10 @@ export default function PusulaApp() {
               searchHistory={searchHistory} onAddSearchHistory={addSearchHistory}
               onClearHistory={clearSearchHistory}
               onLocationChange={(st,ct)=>{ setUserState(st); setUserCity(ct); }}
-              lang={lang}/>
+              lang={lang}
+              dbBusinesses={dbBusinesses}
+              dbJobs={dbJobs}
+              dbEvents={dbEvents}/>
           : tab==="favs"
           ? <Favorites favorites={favorites} onBusiness={openBusiness} toggleFav={toggleFav}/>
           : tab==="profile"
