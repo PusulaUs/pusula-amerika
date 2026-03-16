@@ -2338,6 +2338,7 @@ function BusinessDetail({ business, onBack, favorites, toggleFav, reviews, onAdd
           </div>
 
           {/* Bu işletme sizin mi? Sahiplen */}
+         
           {!isOwner && (
             <div style={{ background:`linear-gradient(135deg,#FFF8E1,#FFF3CD)`,
               border:"1px solid #FDE68A", borderRadius:13, padding:"12px 14px",
@@ -2369,6 +2370,21 @@ function BusinessDetail({ business, onBack, favorites, toggleFav, reviews, onAdd
               </div>
             ))}
           </div>
+          {isOwner && (
+            <div onClick={async()=>{
+              const reason = prompt("Kaldırma sebebi:");
+              if (!reason) return;
+              await supabase.from("removal_requests").insert({
+                business_id: business.id,
+                business_name: business.name,
+                reason: reason,
+              });
+              alert("Kaldırma isteğiniz alındı.");
+            }} style={{ textAlign:"center", padding:"8px", marginTop:8,
+              fontSize:11, color:"#EF4444", cursor:"pointer", textDecoration:"underline" }}>
+              🗑️ İşletmeyi kaldır
+            </div>
+          )}
           </div>
         </div>
 
@@ -3598,7 +3614,7 @@ function BusinessOwnerProfile({ business, onBack, reviews, onEdit }) {
   );
 }
 
-function NotificationsScreen({ onBack, notifications, onMarkRead }) {
+function NotificationsScreen({ onBack, notifications, onMarkRead, onNavigate }) {
   const unread = notifications.filter(n=>!n.read).length;
   return (
     <div style={{ height:"100vh", display:"flex", flexDirection:"column", background:C.bgSoft }}>
@@ -3632,8 +3648,8 @@ function NotificationsScreen({ onBack, notifications, onMarkRead }) {
             <div style={{ fontSize:13, color:C.textMute, marginTop:6 }}>İşletme güncellemeleri burada görünecek</div>
           </div>
         ) : notifications.map((n,i)=>(
-          <div key={i} style={{ padding:"14px 18px", borderBottom:`1px solid ${C.border}`,
-            background:n.read?C.white:C.redLight, display:"flex", gap:12, alignItems:"flex-start" }}>
+          <div key={i} onClick={()=>onNavigate&&onNavigate(n)} style={{ padding:"14px 18px", borderBottom:`1px solid ${C.border}`,
+            background:n.read?C.white:C.redLight, display:"flex", gap:12, alignItems:"flex-start", cursor:"pointer" }}>
             <div style={{ width:42, height:42, borderRadius:12, flexShrink:0,
               background:n.read?`linear-gradient(135deg,${C.redPale},#FFF5F6)`:`linear-gradient(135deg,${C.red},${C.redDark})`,
               display:"flex", alignItems:"center", justifyContent:"center", fontSize:20 }}>
@@ -3976,15 +3992,36 @@ function ReportModal({ type, onClose }) {
 function AdminPanel({ onBack, pendingBiz }) {
   const [tab, setTab]   = useState("pending");
   const [items, setItems] = useState(pendingBiz);
-  const [removeReqs, setRemoveReqs] = useState([
-    { id:201, name:"Bosphorus Kitchen", reason:"Kapandı, artık açık değil", date:"1 gün önce" },
-    { id:202, name:"Ankara Oto Servis",  reason:"Bilgiler yanlış, sahip değilim", date:"3 gün önce" },
-  ]);
-  const approve = id => setItems(p=>p.map(x=>x.id===id?{...x,status:"approved"}:x));
-  const reject  = id => setItems(p=>p.map(x=>x.id===id?{...x,status:"rejected"}:x));
-  const removeApprove = id => setRemoveReqs(p=>p.filter(x=>x.id!==id));
-  const pending  = items.filter(x=>!x.status);
-  const approved = items.filter(x=>x.status==="approved");
+  const [removeReqs, setRemoveReqs] = useState([]);
+
+  useEffect(() => {
+    const fetchRemoval = async () => {
+      const { data } = await supabase.from("removal_requests").select("*");
+      if (data) setRemoveReqs(data.map(r=>({
+        id: r.id,
+        bizId: r.business_id,
+        name: r.business_name,
+        reason: r.reason,
+        date: new Date(r.created_at).toLocaleDateString("tr-TR"),
+      })));
+    };
+    fetchRemoval();
+  }, []);
+  const approve = async id => {
+    await supabase.from("businesses").update({ verified: true, status:"approved" }).eq("id", id);
+    setItems(p=>p.map(x=>x.id===id?{...x,status:"approved",verified:true}:x));
+  };
+  const reject = async id => {
+    await supabase.from("businesses").update({ verified: false, status:"rejected" }).eq("id", id);
+    setItems(p=>p.map(x=>x.id===id?{...x,status:"rejected",verified:false}:x));
+  };
+  const removeApprove = async id => {
+    await supabase.from("businesses").delete().eq("id", id);
+    setRemoveReqs(p=>p.filter(x=>x.id!==id));
+    setItems(p=>p.filter(x=>x.id!==id));
+  };
+  const pending  = items.filter(x=>!x.status && x.verified!==true);
+  const approved = items.filter(x=>x.status==="approved" || x.verified===true);
   const rejected = items.filter(x=>x.status==="rejected");
   const listMap  = {pending, approved, rejected};
   const current  = listMap[tab]||pending;
@@ -4192,14 +4229,7 @@ useEffect(() => {
   });
   const [myBusiness, setMyBusiness] = useState(null);
 
-  const pendingBiz = [
-    { id:101, name:"Kapadokya Restoran", cat:"restaurant", city:"Newark", state:"New Jersey",
-      phone:"+1 (973) 555-9001", img:"🍽️", desc:"Otantik Türk mutfağı, nargile ve canlı müzik." },
-    { id:102, name:"Av. Selin Yıldız",  cat:"lawyer",     city:"Queens",  state:"New York",
-      phone:"+1 (718) 555-9002", img:"⚖️", desc:"Aile hukuku ve göçmenlik davaları, Türkçe hizmet." },
-    { id:103, name:"Ankara Fırın",       cat:"market",     city:"Paterson",state:"New Jersey",
-      phone:"+1 (973) 555-9003", img:"🥖", desc:"Taze Türk ekmeği, simit, börek ve pastane ürünleri." },
-  ];
+  const pendingBiz = dbBusinesses.filter(b=>b.status==="pending" || (!b.status && !b.verified));
 
   const unreadCount = notifications.filter(n=>!n.read).length;
 
@@ -4347,6 +4377,8 @@ useEffect(() => {
       ...prev
     ]);
     setScreen("main");
+    // Yeni işletmeyi listeye ekle
+    setDbBusinesses(prev=>[...prev, newBiz]);
   };
 
   const W = ({children}) => (
@@ -4367,7 +4399,12 @@ useEffect(() => {
   if (screen==="editprofile") return <W><EditProfile profile={userProfile} onBack={()=>setScreen("main")} onSave={p=>{setUserProfile(p);setScreen("main");}}/></W>;
   if (screen==="postjob")     return <W><PostJob onBack={()=>setScreen("main")} onSuccess={(form)=>{ addJob(form); setSubScreen("jobs"); setScreen("main"); }} userName={userProfile.name}/></W>;
   if (screen==="postevent")   return <W><PostEvent onBack={()=>setScreen("main")} onSuccess={()=>{setSubScreen("events");setScreen("main");}}/></W>;
-  if (screen==="notifications") return <W><NotificationsScreen notifications={notifications} onBack={()=>setScreen("main")} onMarkRead={markAllRead}/></W>;
+  if (screen==="notifications") return <W><NotificationsScreen notifications={notifications} onBack={()=>setScreen("main")} onMarkRead={markAllRead} onNavigate={n=>{
+    setScreen("main");
+    if (n.icon==="💼") setSubScreen("jobs");
+    else if (n.icon==="🎉") setSubScreen("events");
+    else if (n.icon==="⏳" || n.icon==="🏢") setScreen("bizprofile");
+  }}/></W>;
   if (screen==="admin")       return <W><AdminPanel onBack={()=>setScreen("main")} pendingBiz={pendingBiz}/></W>;
   if (screen==="bizprofile")  return <W><BusinessOwnerProfile business={myBusiness||businesses[0]} onBack={()=>setScreen("main")} reviews={reviews} onEdit={()=>setScreen("register")}/></W>;
   if (viewUser)               return <W><UserProfilePage user={viewUser} reviews={reviews} onBack={()=>setViewUser(null)}/></W>;
