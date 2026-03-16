@@ -1031,8 +1031,8 @@ function Home({ userState, userCity, onBusiness, onTab, favorites, toggleFav, on
                         fontSize:9, color:C.white, fontWeight:700 }}>✅ONAYLANMIŞ</span>
                     )}
                     {b.verified && (
-                      <span style={{ background:C.turqLight, borderRadius:6, padding:"2px 6px",
-                        fontSize:9, color:C.turqDark, fontWeight:700 }}>✓ ONAYLANDI</span>
+                      <span style={{ background:"linear-gradient(135deg,#F59E0B,#D97706)", borderRadius:6, padding:"2px 8px",
+                        fontSize:9, color:C.white, fontWeight:700 }}>✅ ONAYLANDI</span>
                     )}
                   </div>
                 </div>
@@ -3453,6 +3453,7 @@ function BusinessOwnerProfile({ business, onBack, reviews, onEdit, onUpdate }) {
     phone: business.phone||"",
     address: business.address||"",
     desc: business.desc||business.description||"",
+    hours: business.hours || DAYS.map(d=>({ day:d, open:true, from:"09:00", to:"18:00" })),
   });
 
   return (
@@ -3509,49 +3510,7 @@ function BusinessOwnerProfile({ business, onBack, reviews, onEdit, onUpdate }) {
       </div>
 
       <div style={{ flex:1, overflowY:"auto", padding:"16px 18px" }}>
-{editing && (
-          <div style={{ background:C.white, border:`1px solid ${C.border}`,
-            borderRadius:16, padding:"16px", marginBottom:14 }}>
-            <div style={{ fontSize:11, fontWeight:700, color:C.textMute,
-              letterSpacing:1.5, textTransform:"uppercase", marginBottom:12 }}>BİLGİLERİ GÜNCELLE</div>
-            {[
-              { key:"name", label:"İşletme Adı", placeholder:"İşletme adı" },
-              { key:"phone", label:"Telefon", placeholder:"+1 (555) 000-0000" },
-              { key:"address", label:"Adres", placeholder:"Adres" },
-            ].map(f=>(
-              <div key={f.key} style={{ marginBottom:12 }}>
-                <div style={{ fontSize:11, fontWeight:700, color:C.textSub, marginBottom:4 }}>{f.label}</div>
-                <input value={editForm[f.key]} onChange={e=>setEditForm(p=>({...p,[f.key]:e.target.value}))}
-                  placeholder={f.placeholder}
-                  style={{ width:"100%", boxSizing:"border-box", padding:"10px 12px",
-                    borderRadius:10, border:`1.5px solid ${C.border}`,
-                    background:C.redPale, fontSize:13, color:C.text, outline:"none" }}/>
-              </div>
-            ))}
-            <div style={{ marginBottom:12 }}>
-              <div style={{ fontSize:11, fontWeight:700, color:C.textSub, marginBottom:4 }}>Açıklama</div>
-              <textarea value={editForm.desc} onChange={e=>setEditForm(p=>({...p,desc:e.target.value}))}
-                rows={3} style={{ width:"100%", boxSizing:"border-box", padding:"10px 12px",
-                  borderRadius:10, border:`1.5px solid ${C.border}`,
-                  background:C.redPale, fontSize:13, color:C.text, outline:"none", resize:"vertical" }}/>
-            </div>
-            <button onClick={async()=>{
-              await supabase.from("businesses").update({
-                name: editForm.name,
-                phone: editForm.phone,
-                address: editForm.address,
-                description: editForm.desc,
-              }).eq("id", business.id);
-              setEditing(false);
-              if (onUpdate) onUpdate(editForm);
-              alert("Bilgiler güncellendi!");
-            }} style={{ width:"100%", border:"none", borderRadius:11, padding:"12px",
-              fontSize:13, fontWeight:700, cursor:"pointer",
-              background:`linear-gradient(135deg,${C.red},${C.redDark})`, color:C.white }}>
-              Kaydet ✓
-            </button>
-          </div>
-        )}
+
         {editing && (
           <div style={{ background:C.white, border:`1px solid ${C.border}`,
             borderRadius:16, padding:"16px", marginBottom:14 }}>
@@ -3578,12 +3537,37 @@ function BusinessOwnerProfile({ business, onBack, reviews, onEdit, onUpdate }) {
                   borderRadius:10, border:`1.5px solid ${C.border}`,
                   background:C.redPale, fontSize:13, color:C.text, outline:"none", resize:"vertical" }}/>
             </div>
+            {/* Çalışma Saatleri */}
+            <div style={{ marginBottom:12 }}>
+              <div style={{ fontSize:11, fontWeight:700, color:C.textSub, marginBottom:8 }}>Çalışma Saatleri</div>
+              {editForm.hours.map((h,i)=>(
+                <div key={i} style={{ display:"flex", alignItems:"center", gap:8, marginBottom:6 }}>
+                  <div style={{ width:32, fontSize:10, fontWeight:700, color:C.textSub }}>{h.day?.slice(0,3)||DAYS[i]?.slice(0,3)}</div>
+                  <div onClick={()=>setEditForm(p=>({ ...p, hours: p.hours.map((x,j)=>j===i?{...x,open:!x.open}:x) }))}
+                    style={{ width:36, height:20, borderRadius:10, cursor:"pointer",
+                      background: h.open ? C.red : "#E5E7EB", position:"relative", transition:"all 0.2s" }}>
+                    <div style={{ width:16, height:16, borderRadius:"50%", background:C.white,
+                      position:"absolute", top:2, left: h.open ? 18 : 2, transition:"all 0.2s" }}/>
+                  </div>
+                  {h.open && <>
+                    <input type="time" value={h.from} onChange={e=>setEditForm(p=>({ ...p, hours: p.hours.map((x,j)=>j===i?{...x,from:e.target.value}:x) }))}
+                      style={{ padding:"3px 6px", borderRadius:6, border:`1px solid ${C.border}`, fontSize:11 }}/>
+                    <span style={{ fontSize:10, color:C.textMute }}>—</span>
+                    <input type="time" value={h.to} onChange={e=>setEditForm(p=>({ ...p, hours: p.hours.map((x,j)=>j===i?{...x,to:e.target.value}:x) }))}
+                      style={{ padding:"3px 6px", borderRadius:6, border:`1px solid ${C.border}`, fontSize:11 }}/>
+                  </>}
+                  {!h.open && <span style={{ fontSize:11, color:C.textMute }}>Kapalı</span>}
+                </div>
+              ))}
+            </div>
+
             <button onClick={async()=>{
               await supabase.from("businesses").update({
                 name: editForm.name,
                 phone: editForm.phone,
                 address: editForm.address,
                 description: editForm.desc,
+                hours: editForm.hours,
               }).eq("id", business.id);
               setEditing(false);
               alert("Bilgiler güncellendi!");
@@ -3594,23 +3578,7 @@ function BusinessOwnerProfile({ business, onBack, reviews, onEdit, onUpdate }) {
             </button>
           </div>
         )}
-        {/* Bilgi güncelleme uyarısı */}
-        <div style={{ background:"#FFF8E1", border:"1px solid #FDE68A",
-          borderRadius:13, padding:"12px 14px", marginBottom:14,
-          display:"flex", alignItems:"center", gap:10 }}>
-          <span style={{ fontSize:18 }}>📋</span>
-          <div style={{ flex:1 }}>
-            <div style={{ fontSize:12, fontWeight:700, color:"#92400E", marginBottom:2 }}>
-              Bilgileriniz hâlâ güncel mi?
-            </div>
-            <div style={{ fontSize:11, color:"#B45309" }}>
-              Telefon, adres veya çalışma saatleriniz değiştiyse güncelleyin.
-            </div>
-          </div>
-          <div onClick={onEdit} style={{ background:"#F59E0B", borderRadius:8,
-            padding:"6px 12px", fontSize:11, fontWeight:700,
-            color:C.white, cursor:"pointer", flexShrink:0 }}>Güncelle</div>
-        </div>
+      
         <div style={{ background:C.white, border:`1px solid ${C.border}`,
           borderRadius:16, overflow:"hidden", marginBottom:14 }}>
           <div style={{ padding:"12px 16px", borderBottom:`1px solid ${C.border}`,
