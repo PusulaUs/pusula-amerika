@@ -337,7 +337,12 @@ function Onboarding({ onDone }) {
         {/* Altın alt çizgi */}
         <div style={{ position:"absolute", bottom:0, left:0, right:0, height:2,
           background:`linear-gradient(90deg,transparent,#C9A84C,transparent)` }}/>
-        <div style={{ marginBottom:28 }}><img src="/logo.png" alt="Pusula Amerika" style={{ height:80, width:"auto", background:"transparent" }}/></div>
+        <div style={{ marginBottom:28, display:"flex", alignItems:"center", justifyContent:"center", gap:14 }}>
+          <img src="/logo.png" alt="Pusula Amerika" style={{ height:80, width:"auto", background:"transparent" }}/>
+          <div className="playfair" style={{ fontSize:26, fontWeight:800, color:C.white, lineHeight:1.2 }}>
+            Pusula<br/><span style={{ color:"#C9A84C" }}>Amerika</span>
+          </div>
+        </div>
         <div style={{ fontSize:10, color:"rgba(201,168,76,0.8)",
           letterSpacing:3, textTransform:"uppercase", marginBottom:8, fontWeight:600 }}>
           {step===0 ? "Hoş Geldiniz" : "Konumunuz"}
