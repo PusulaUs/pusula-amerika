@@ -1940,6 +1940,21 @@ function ProfilePage({ userProfile, onEdit, favorites, onBusiness, loggedIn, onL
               <div style={{ fontSize:12, color:C.textMute }}>→</div>
             </div>}
 
+            {/* İşletme sahibi paneli */}
+            {myBusiness && (
+              <div onClick={onMyBusiness} style={{ background:C.white,
+                border:`1px solid ${C.border}`, borderRadius:13, padding:"13px 16px",
+                marginBottom:12, display:"flex", alignItems:"center", gap:12, cursor:"pointer" }}>
+                <div style={{ width:36, height:36, borderRadius:10,
+                  background:`linear-gradient(135deg,${C.red},${C.redDark})`,
+                  display:"flex", alignItems:"center", justifyContent:"center", fontSize:16 }}>🏢</div>
+                <div style={{ flex:1 }}>
+                  <div style={{ fontSize:13, fontWeight:700, color:C.text }}>İşletmem</div>
+                  <div style={{ fontSize:11, color:C.textMute }}>{myBusiness.name}</div>
+                </div>
+                <div style={{ fontSize:12, color:C.textMute }}>→</div>
+              </div>
+            )}
             {/* İşletme ekle butonu */}
             <div onClick={onRegisterBiz} style={{ border:`2px dashed #F59E0B`,
               borderRadius:14, padding:"14px 16px", textAlign:"center",
@@ -3426,11 +3441,19 @@ function PostEvent({ onBack, onSuccess }) {
   );
 }
 
-function BusinessOwnerProfile({ business, onBack, reviews, onEdit }) {
+function BusinessOwnerProfile({ business, onBack, reviews, onEdit, onUpdate }) {
   const bizReviews = reviews.filter(r=>r.bizId===business.id);
   const avgRating = bizReviews.length
     ? (bizReviews.reduce((s,r)=>s+r.stars,0)/bizReviews.length).toFixed(1)
     : business.rating;
+
+    const [editing, setEditing] = useState(false);
+  const [editForm, setEditForm] = useState({
+    name: business.name||"",
+    phone: business.phone||"",
+    address: business.address||"",
+    desc: business.desc||business.description||"",
+  });
 
   return (
     <div style={{ height:"100vh", display:"flex", flexDirection:"column", background:C.bgSoft }}>
@@ -3461,10 +3484,10 @@ function BusinessOwnerProfile({ business, onBack, reviews, onEdit }) {
               📍 {business.city}, {business.state}
             </div>
           </div>
-          <div onClick={onEdit} style={{ background:"rgba(255,255,255,0.18)",
+          <div onClick={()=>setEditing(e=>!e)} style={{ background:"rgba(255,255,255,0.18)",
             border:"1px solid rgba(255,255,255,0.3)", borderRadius:9,
             padding:"7px 12px", fontSize:11, fontWeight:700,
-            color:C.white, cursor:"pointer" }}>Düzenle</div>
+            color:C.white, cursor:"pointer" }}>{editing?"İptal":"Düzenle"}</div>
         </div>
       </div>
 
@@ -3486,7 +3509,91 @@ function BusinessOwnerProfile({ business, onBack, reviews, onEdit }) {
       </div>
 
       <div style={{ flex:1, overflowY:"auto", padding:"16px 18px" }}>
-
+{editing && (
+          <div style={{ background:C.white, border:`1px solid ${C.border}`,
+            borderRadius:16, padding:"16px", marginBottom:14 }}>
+            <div style={{ fontSize:11, fontWeight:700, color:C.textMute,
+              letterSpacing:1.5, textTransform:"uppercase", marginBottom:12 }}>BİLGİLERİ GÜNCELLE</div>
+            {[
+              { key:"name", label:"İşletme Adı", placeholder:"İşletme adı" },
+              { key:"phone", label:"Telefon", placeholder:"+1 (555) 000-0000" },
+              { key:"address", label:"Adres", placeholder:"Adres" },
+            ].map(f=>(
+              <div key={f.key} style={{ marginBottom:12 }}>
+                <div style={{ fontSize:11, fontWeight:700, color:C.textSub, marginBottom:4 }}>{f.label}</div>
+                <input value={editForm[f.key]} onChange={e=>setEditForm(p=>({...p,[f.key]:e.target.value}))}
+                  placeholder={f.placeholder}
+                  style={{ width:"100%", boxSizing:"border-box", padding:"10px 12px",
+                    borderRadius:10, border:`1.5px solid ${C.border}`,
+                    background:C.redPale, fontSize:13, color:C.text, outline:"none" }}/>
+              </div>
+            ))}
+            <div style={{ marginBottom:12 }}>
+              <div style={{ fontSize:11, fontWeight:700, color:C.textSub, marginBottom:4 }}>Açıklama</div>
+              <textarea value={editForm.desc} onChange={e=>setEditForm(p=>({...p,desc:e.target.value}))}
+                rows={3} style={{ width:"100%", boxSizing:"border-box", padding:"10px 12px",
+                  borderRadius:10, border:`1.5px solid ${C.border}`,
+                  background:C.redPale, fontSize:13, color:C.text, outline:"none", resize:"vertical" }}/>
+            </div>
+            <button onClick={async()=>{
+              await supabase.from("businesses").update({
+                name: editForm.name,
+                phone: editForm.phone,
+                address: editForm.address,
+                description: editForm.desc,
+              }).eq("id", business.id);
+              setEditing(false);
+              if (onUpdate) onUpdate(editForm);
+              alert("Bilgiler güncellendi!");
+            }} style={{ width:"100%", border:"none", borderRadius:11, padding:"12px",
+              fontSize:13, fontWeight:700, cursor:"pointer",
+              background:`linear-gradient(135deg,${C.red},${C.redDark})`, color:C.white }}>
+              Kaydet ✓
+            </button>
+          </div>
+        )}
+        {editing && (
+          <div style={{ background:C.white, border:`1px solid ${C.border}`,
+            borderRadius:16, padding:"16px", marginBottom:14 }}>
+            <div style={{ fontSize:11, fontWeight:700, color:C.textMute,
+              letterSpacing:1.5, textTransform:"uppercase", marginBottom:12 }}>BİLGİLERİ GÜNCELLE</div>
+            {[
+              { key:"name", label:"İşletme Adı", placeholder:"İşletme adı" },
+              { key:"phone", label:"Telefon", placeholder:"+1 (555) 000-0000" },
+              { key:"address", label:"Adres", placeholder:"Adres" },
+            ].map(f=>(
+              <div key={f.key} style={{ marginBottom:12 }}>
+                <div style={{ fontSize:11, fontWeight:700, color:C.textSub, marginBottom:4 }}>{f.label}</div>
+                <input value={editForm[f.key]} onChange={e=>setEditForm(p=>({...p,[f.key]:e.target.value}))}
+                  placeholder={f.placeholder}
+                  style={{ width:"100%", boxSizing:"border-box", padding:"10px 12px",
+                    borderRadius:10, border:`1.5px solid ${C.border}`,
+                    background:C.redPale, fontSize:13, color:C.text, outline:"none" }}/>
+              </div>
+            ))}
+            <div style={{ marginBottom:12 }}>
+              <div style={{ fontSize:11, fontWeight:700, color:C.textSub, marginBottom:4 }}>Açıklama</div>
+              <textarea value={editForm.desc} onChange={e=>setEditForm(p=>({...p,desc:e.target.value}))}
+                rows={3} style={{ width:"100%", boxSizing:"border-box", padding:"10px 12px",
+                  borderRadius:10, border:`1.5px solid ${C.border}`,
+                  background:C.redPale, fontSize:13, color:C.text, outline:"none", resize:"vertical" }}/>
+            </div>
+            <button onClick={async()=>{
+              await supabase.from("businesses").update({
+                name: editForm.name,
+                phone: editForm.phone,
+                address: editForm.address,
+                description: editForm.desc,
+              }).eq("id", business.id);
+              setEditing(false);
+              alert("Bilgiler güncellendi!");
+            }} style={{ width:"100%", border:"none", borderRadius:11, padding:"12px",
+              fontSize:13, fontWeight:700, cursor:"pointer",
+              background:`linear-gradient(135deg,${C.red},${C.redDark})`, color:C.white }}>
+              Kaydet ✓
+            </button>
+          </div>
+        )}
         {/* Bilgi güncelleme uyarısı */}
         <div style={{ background:"#FFF8E1", border:"1px solid #FDE68A",
           borderRadius:13, padding:"12px 14px", marginBottom:14,
