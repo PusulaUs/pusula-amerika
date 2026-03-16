@@ -323,7 +323,7 @@ function Onboarding({ onDone }) {
   const filtered = US_STATES.filter(s => s.toLowerCase().includes(query.toLowerCase()));
 
   return (
-    <div style={{ height:"100%", display:"flex", flexDirection:"column", background:C.white }}>
+    <div style={{ height:"100vh", display:"flex", flexDirection:"column", background:C.white }}>
       <div style={{
         background:`radial-gradient(ellipse at 20% 0%, #1A3560 0%, #0D1F3C 55%, #060F1E 100%)`,
         padding:"36px 24px 48px", position:"relative", overflow:"hidden" }}>
@@ -337,7 +337,7 @@ function Onboarding({ onDone }) {
         {/* Altın alt çizgi */}
         <div style={{ position:"absolute", bottom:0, left:0, right:0, height:2,
           background:`linear-gradient(90deg,transparent,#C9A84C,transparent)` }}/>
-        <div style={{ marginBottom:28 }}><PusulaLogo size={44} dark={true}/></div>
+        <div style={{ marginBottom:28 }}><img src="/logo.png" alt="Pusula Amerika" style={{ height:80, width:"auto", background:"transparent" }}/></div>
         <div style={{ fontSize:10, color:"rgba(201,168,76,0.8)",
           letterSpacing:3, textTransform:"uppercase", marginBottom:8, fontWeight:600 }}>
           {step===0 ? "Hoş Geldiniz" : "Konumunuz"}
@@ -527,7 +527,7 @@ function Home({ userState, userCity, onBusiness, onTab, favorites, toggleFav, on
   };
 
   return (
-    <div style={{ height:"100%", display:"flex", flexDirection:"column",
+    <div style={{ height:"100vh", display:"flex", flexDirection:"column",
       background:C.bgSoft, position:"relative" }}>
 
       {/* ── Header — Glassmorphism ── */}
@@ -536,7 +536,17 @@ function Home({ userState, userCity, onBusiness, onTab, favorites, toggleFav, on
         borderBottom:"none", padding:"14px 18px 12px",
         boxShadow:"0 4px 20px rgba(13,31,60,0.18)" }}>
         <div style={{ display:"flex", justifyContent:"space-between", alignItems:"center", marginBottom:12 }}>
-          <PusulaLogo size={32} dark={true}/>
+          <div onClick={clearAll} style={{ cursor:"pointer", display:"flex", alignItems:"center", gap:10 }}>
+  <img src="/logo.png" alt="Pusula Amerika" style={{ height:38, width:"auto", background:"transparent" }}/>
+  <div>
+    <div className="playfair" style={{ fontSize:18, fontWeight:800, color:C.white, lineHeight:1 }}>
+      Pusula <span style={{ color:"#C9A84C" }}>Amerika</span>
+    </div>
+    <div style={{ fontSize:9, color:"rgba(255,255,255,0.6)", letterSpacing:2, textTransform:"uppercase", marginTop:2 }}>
+      Amerika Rehberi
+    </div>
+  </div>
+</div>
           <div style={{ display:"flex", alignItems:"center", gap:8 }}>
             <div onClick={()=>setShowLocModal(true)} style={{
               background:"rgba(255,255,255,0.13)",
@@ -574,7 +584,7 @@ function Home({ userState, userCity, onBusiness, onTab, favorites, toggleFav, on
             borderRadius:12, padding:"10px 14px" }}>
             <span style={{ color:"rgba(255,255,255,0.7)", fontSize:15 }}>🔍</span>
             <input value={search}
-              onFocus={()=>!search&&setShowOverlay(true)}
+              onFocus={()=>{}}
               onChange={e=>{ setSearch(e.target.value); setShowOverlay(false); if(e.target.value) setSelCat(null); }}
               onKeyDown={e=>{ if(e.key==="Enter"&&search){ onAddSearchHistory(search); setShowOverlay(false); }}}
               placeholder={lang==="TR"?"İşletme ara...":"Search businesses..."}
@@ -591,7 +601,14 @@ function Home({ userState, userCity, onBusiness, onTab, favorites, toggleFav, on
             border:`1.5px solid ${showFilters ? "#C9A84C" : "rgba(255,255,255,0.22)"}`,
             display:"flex", alignItems:"center", justifyContent:"center",
             cursor:"pointer" }}>
-            <span style={{ fontSize:18 }}>🔽</span>
+            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="white" strokeWidth="2" strokeLinecap="round">
+  <line x1="4" y1="6" x2="20" y2="6"/>
+  <circle cx="8" cy="6" r="2" fill="white"/>
+  <line x1="4" y1="12" x2="20" y2="12"/>
+  <circle cx="16" cy="12" r="2" fill="white"/>
+  <line x1="4" y1="18" x2="20" y2="18"/>
+  <circle cx="10" cy="18" r="2" fill="white"/>
+</svg>
             {activeFilterCount>0 && (
               <div style={{ position:"absolute", top:-4, right:-4, width:16, height:16,
                 borderRadius:"50%", background:"#C9A84C", border:"2px solid white",
@@ -914,32 +931,19 @@ function Home({ userState, userCity, onBusiness, onTab, favorites, toggleFav, on
                   letterSpacing:1.5, textTransform:"uppercase", marginBottom:2 }}>
                   {activeCat ? `${activeCat.icon} ${activeCat.label}` : search ? `"${search}"` : "FİLTRELENDİ"}
                 </div>
-                <div style={{ fontSize:12, color:C.textSub }}>
+                <div onClick={()=>setSelCat(null)} style={{ display:"flex", alignItems:"center",
+                gap:6, background:C.white, border:`1px solid ${C.border}`,
+                borderRadius:20, padding:"6px 14px", fontSize:12, fontWeight:700,
+                color:C.red, cursor:"pointer", marginBottom:6 }}>← Ana Menüye Dön</div>
+              <div style={{ fontSize:12, color:C.textSub }}>
                   {filtered.length} işletme bulundu
                 </div>
               </div>
-              <div onClick={clearAll} style={{ fontSize:11, color:C.red,
-                fontWeight:700, cursor:"pointer", background:C.redLight,
-                border:`1px solid ${C.border}`, borderRadius:8, padding:"5px 10px" }}>
-                ✕ Temizle
-              </div>
+            
             </div>
           )}
 
-          {/* Aktif filtre etiketleri */}
-          {selCat && (
-            <div style={{ display:"flex", alignItems:"center", gap:8, marginBottom:10 }}>
-              <div onClick={()=>setSelCat(null)} style={{ display:"flex", alignItems:"center",
-                gap:6, background:C.white, border:`1px solid ${C.border}`,
-                borderRadius:20, padding:"6px 14px", fontSize:12, fontWeight:700,
-                color:C.red, cursor:"pointer" }}>← Ana Menüye Dön</div>
-              <div style={{ fontSize:12, fontWeight:600, color:C.textSub }}>
-                {lang==="EN"
-                  ? (categories.find(c=>c.id===selCat)?.labelEN||categories.find(c=>c.id===selCat)?.label)
-                  : categories.find(c=>c.id===selCat)?.label}
-              </div>
-            </div>
-          )}
+          
           {isFiltering && activeFilterCount>0 && (
             <div style={{ display:"flex", gap:6, flexWrap:"wrap", marginBottom:12 }}>
               {filterState && (
@@ -1057,9 +1061,9 @@ function Home({ userState, userCity, onBusiness, onTab, favorites, toggleFav, on
                   {b.tags.map(t=><Tag key={t} label={t}/>)}
                 </div>
               </div>
-              <div onClick={()=>toggleFav(b.id)} style={{ flexShrink:0, fontSize:20,
+              <div onClick={()=>toggleFav(b.id)} style={{ flexShrink:0, fontSize:26,
                 cursor:"pointer", paddingTop:2,
-                color: favorites.includes(b.id) ? C.red : "#EECDD0" }}>
+                color: favorites.includes(b.id) ? "#E11D48" : "#EECDD0" }}>
                 {favorites.includes(b.id) ? "♥" : "♡"}
               </div>
             </div>
@@ -1091,11 +1095,12 @@ function Home({ userState, userCity, onBusiness, onTab, favorites, toggleFav, on
   );
 }
 
-function Favorites({ favorites, onBusiness, toggleFav }) {
-  const favList = businesses.filter(b=>favorites.includes(b.id));
+function Favorites({ favorites, onBusiness, toggleFav, dbBusinesses=[] }) {
+  const allBiz = [...businesses, ...dbBusinesses];
+  const favList = allBiz.filter(b=>favorites.includes(b.id));
 
   return (
-    <div style={{ height:"100%", display:"flex", flexDirection:"column", background:C.bgSoft }}>
+    <div style={{ height:"100vh", display:"flex", flexDirection:"column", background:C.bgSoft }}>
       <div style={{ background:C.white, borderBottom:`1px solid ${C.border}`, padding:"16px 18px 14px" }}>
         <div style={{ fontSize:17, fontWeight:700, color:C.text, marginBottom:2 }}>Favorilerim</div>
         <div style={{ fontSize:11, color:C.textMute }}>{favList.length} kaydedilmiş işletme</div>
@@ -1149,7 +1154,7 @@ function Jobs({ onBack, onPost, extraJobs=[] }) {
   const filtered = allJobs;
 
   return (
-    <div style={{ height:"100%", display:"flex", flexDirection:"column", background:C.bgSoft }}>
+    <div style={{ height:"100vh", display:"flex", flexDirection:"column", background:C.bgSoft }}>
       <div style={{ background:C.white, borderBottom:`1px solid ${C.border}`, padding:"16px 18px 0" }}>
         <button onClick={onBack} style={{ background:"none", border:"none", color:C.red,
           fontSize:13, fontWeight:700, cursor:"pointer",
@@ -1227,7 +1232,7 @@ function Events({ onBack, onPost, dbEvents=[] }) {
   const filtered = filter==="Tümü" ? allEvents : allEvents.filter(e=>e.cat===filter);
 
   return (
-    <div style={{ height:"100%", display:"flex", flexDirection:"column", background:C.bgSoft }}>
+    <div style={{ height:"100vh", display:"flex", flexDirection:"column", background:C.bgSoft }}>
       <div style={{ background:C.white, borderBottom:`1px solid ${C.border}`, padding:"16px 18px 0" }}>
         <button onClick={onBack} style={{ background:"none", border:"none", color:C.red,
           fontSize:13, fontWeight:700, cursor:"pointer",
@@ -1357,7 +1362,7 @@ function RegisterBusiness({ onBack, onSuccess }) {
   };
 
   if (submitted) return (
-    <div style={{ height:"100%", display:"flex", flexDirection:"column",
+    <div style={{ height:"100vh", display:"flex", flexDirection:"column",
       alignItems:"center", justifyContent:"center",
       background:C.white, padding:32, textAlign:"center" }}>
       <div style={{ width:88, height:88, borderRadius:24, margin:"0 auto 24px",
@@ -1382,7 +1387,7 @@ function RegisterBusiness({ onBack, onSuccess }) {
   );
 
   return (
-    <div style={{ height:"100%", display:"flex", flexDirection:"column", background:C.white }}>
+    <div style={{ height:"100vh", display:"flex", flexDirection:"column", background:C.white }}>
 
       {/* Header */}
       <div style={{ background:`linear-gradient(135deg,${C.red},${C.redDark})`,
@@ -1433,7 +1438,7 @@ function RegisterBusiness({ onBack, onSuccess }) {
                 Kategori <span style={{ color:C.red }}>*</span>
               </div>
               <div style={{ display:"grid", gridTemplateColumns:"1fr 1fr", gap:8 }}>
-                {categories.filter(c=>c.id!=="jobs"&&c.id!=="events"&&c.id!=="other").map(cat=>(
+                {categories.filter(c=>c.id!=="jobs"&&c.id!=="events").map(cat=>(
                   <div key={cat.id} onClick={()=>set("category",cat.id)} style={{
                     display:"flex", alignItems:"center", gap:10,
                     padding:"11px 14px", borderRadius:12, cursor:"pointer",
@@ -1700,12 +1705,99 @@ function NotifPrefs() {
     </div>
   );
 }
+function ContactPage() {
+  return (
+    <div style={{ height:"100vh", display:"flex", flexDirection:"column", background:C.bgSoft, overflowY:"auto" }}>
+      
+      {/* Header */}
+      <div style={{ background:`linear-gradient(135deg,${C.red},${C.redDark})`,
+        padding:"24px 24px 32px", textAlign:"center", position:"relative", overflow:"hidden" }}>
+        <div style={{ position:"absolute", top:-20, right:-20, width:120, height:120,
+          borderRadius:"50%", background:"rgba(255,255,255,0.06)" }}/>
+        <div style={{ position:"absolute", bottom:-30, left:-30, width:100, height:100,
+          borderRadius:"50%", background:"rgba(201,168,76,0.1)" }}/>
+        <div style={{ margin:"0 auto 16px" }}>
+          <img src="/logo.png" alt="Pusula Amerika" style={{ height:55, width:"auto", background:"transparent" }}/>
+        </div>
+        <div className="playfair" style={{ fontSize:20, fontWeight:800, color:C.white,
+          marginBottom:4 }}>Pusula <span style={{ color:"#C9A84C" }}>Amerika</span></div>
+        <div style={{ fontSize:11, color:"rgba(255,255,255,0.7)", letterSpacing:1.5,
+          textTransform:"uppercase" }}>Amerika'daki Türklerin Yol Arkadaşı</div>
+      </div>
 
-function ProfilePage({ userProfile, onEdit, favorites, onBusiness, loggedIn, onLogin, myBusiness, onMyBusiness, onRegisterBiz, lang, onLangChange, onAdmin }) {
+      <div style={{ padding:"24px 20px" }}>
 
+        {/* Hakkında */}
+        <div style={{ background:C.white, borderRadius:16, padding:"18px",
+          marginBottom:16, border:`1px solid ${C.border}` }}>
+          <div style={{ fontSize:11, fontWeight:700, color:C.textMute,
+            letterSpacing:1.5, textTransform:"uppercase", marginBottom:12 }}>Hakkımızda</div>
+          <div style={{ fontSize:13, color:C.textSub, lineHeight:1.8 }}>
+            Pusula Amerika, Amerika'daki Türk toplumuna yönelik geliştirilmiş bir işletme rehberi ve topluluk platformudur. 
+            Türkçe hizmet veren işletmeleri keşfetmek, iş ilanlarına ulaşmak ve topluluk etkinliklerini takip etmek için 
+            doğru adrestesiniz.
+          </div>
+        </div>
+
+        {/* İletişim */}
+        <div style={{ background:C.white, borderRadius:16, padding:"18px",
+          marginBottom:16, border:`1px solid ${C.border}` }}>
+          <div style={{ fontSize:11, fontWeight:700, color:C.textMute,
+            letterSpacing:1.5, textTransform:"uppercase", marginBottom:12 }}>İletişim</div>
+          <a href="mailto:info@pusula-amerika.com" style={{ display:"flex", alignItems:"center",
+            gap:12, padding:"10px 0", borderBottom:`1px solid ${C.border}`,
+            textDecoration:"none" }}>
+            <div style={{ width:36, height:36, borderRadius:10,
+              background:`linear-gradient(135deg,${C.red},${C.redDark})`,
+              display:"flex", alignItems:"center", justifyContent:"center", fontSize:16 }}>✉️</div>
+            <div>
+              <div style={{ fontSize:11, color:C.textMute, fontWeight:600 }}>E-posta</div>
+              <div style={{ fontSize:13, color:C.red, fontWeight:700 }}>pusulaamerika@gmail.com</div>
+            </div>
+          </a>
+        </div>
+
+        {/* Sosyal Medya */}
+        <div style={{ background:C.white, borderRadius:16, padding:"18px",
+          marginBottom:16, border:`1px solid ${C.border}` }}>
+          <div style={{ fontSize:11, fontWeight:700, color:C.textMute,
+            letterSpacing:1.5, textTransform:"uppercase", marginBottom:12 }}>Sosyal Medya</div>
+          {[
+            { icon:<svg viewBox="0 0 24 24" width="20" height="20" fill="#E1306C"><path d="M12 2.163c3.204 0 3.584.012 4.85.07 3.252.148 4.771 1.691 4.919 4.919.058 1.265.069 1.645.069 4.849 0 3.205-.012 3.584-.069 4.849-.149 3.225-1.664 4.771-4.919 4.919-1.266.058-1.644.07-4.85.07-3.204 0-3.584-.012-4.849-.07-3.26-.149-4.771-1.699-4.919-4.92-.058-1.265-.07-1.644-.07-4.849 0-3.204.013-3.583.07-4.849.149-3.227 1.664-4.771 4.919-4.919 1.266-.057 1.645-.069 4.849-.069zm0-2.163c-3.259 0-3.667.014-4.947.072-4.358.2-6.78 2.618-6.98 6.98-.059 1.281-.073 1.689-.073 4.948 0 3.259.014 3.668.072 4.948.2 4.358 2.618 6.78 6.98 6.98 1.281.058 1.689.072 4.948.072 3.259 0 3.668-.014 4.948-.072 4.354-.2 6.782-2.618 6.979-6.98.059-1.28.073-1.689.073-4.948 0-3.259-.014-3.667-.072-4.947-.196-4.354-2.617-6.78-6.979-6.98-1.281-.059-1.69-.073-4.949-.073zm0 5.838c-3.403 0-6.162 2.759-6.162 6.162s2.759 6.163 6.162 6.163 6.162-2.759 6.162-6.163c0-3.403-2.759-6.162-6.162-6.162zm0 10.162c-2.209 0-4-1.79-4-4 0-2.209 1.791-4 4-4s4 1.791 4 4c0 2.21-1.791 4-4 4zm6.406-11.845c-.796 0-1.441.645-1.441 1.44s.645 1.44 1.441 1.44c.795 0 1.439-.645 1.439-1.44s-.644-1.44-1.439-1.44z"/></svg>, label:"Instagram", handle:"@pusulaamerika", url:"https://instagram.com/pusulaamerika", color:"#E1306C" },
+            { icon:<svg viewBox="0 0 24 24" width="20" height="20" fill="#000000"><path d="M18.244 2.25h3.308l-7.227 8.26 8.502 11.24H16.17l-4.714-6.231-5.401 6.231H2.744l7.737-8.835L1.254 2.25H8.08l4.253 5.622 5.911-5.622zm-1.161 17.52h1.833L7.084 4.126H5.117z"/></svg>, label:"X (Twitter)", handle:"@pusulaamerika", url:"https://x.com/pusulaamerika", color:"#000000" },
+            { icon:<svg viewBox="0 0 24 24" width="20" height="20" fill="#1877F2"><path d="M24 12.073c0-6.627-5.373-12-12-12s-12 5.373-12 12c0 5.99 4.388 10.954 10.125 11.854v-8.385H7.078v-3.47h3.047V9.43c0-3.007 1.792-4.669 4.533-4.669 1.312 0 2.686.235 2.686.235v2.953H15.83c-1.491 0-1.956.925-1.956 1.874v2.25h3.328l-.532 3.47h-2.796v8.385C19.612 23.027 24 18.062 24 12.073z"/></svg>, label:"Facebook", handle:"Pusula Amerika", url:"https://facebook.com/pusulaamerika", color:"#1877F2" },
+          ].map(s=>(
+            <a key={s.label} href={s.url} target="_blank" rel="noreferrer"
+              style={{ display:"flex", alignItems:"center", gap:12,
+                padding:"10px 0", borderBottom:`1px solid ${C.border}`,
+                textDecoration:"none" }}>
+              <div style={{ width:36, height:36, borderRadius:10, flexShrink:0,
+                background:`${s.color}22`, border:`1px solid ${s.color}44`,
+                display:"flex", alignItems:"center", justifyContent:"center", fontSize:18 }}>{s.icon}</div>
+              <div style={{ flex:1 }}>
+                <div style={{ fontSize:11, color:C.textMute, fontWeight:600 }}>{s.label}</div>
+                <div style={{ fontSize:13, fontWeight:700, color:s.color }}>{s.handle}</div>
+              </div>
+              <span style={{ color:C.textMute, fontSize:14 }}>→</span>
+            </a>
+          ))}
+        </div>
+
+        {/* Versiyon */}
+        <div style={{ textAlign:"center", padding:"16px 0", color:C.textMute, fontSize:11 }}>
+          Pusula Amerika v1.0 · 2024
+        </div>
+
+      </div>
+    </div>
+  );
+}
+function ProfilePage({ userProfile, onEdit, favorites, onBusiness, loggedIn, onLogin, myBusiness, onMyBusiness, onRegisterBiz, lang, onLangChange, onAdmin, onLogout, dbBusinesses=[], reviews=[] }) {
+ const favList = [...businesses, ...(dbBusinesses||[])].filter(b => favorites.includes(b.id));
+  const [tab, setTab] = useState("info"); // info | favs
   // Giriş yapılmamışsa login kartı göster
   if (!loggedIn) return (
-    <div style={{ height:"100%", display:"flex", flexDirection:"column",
+    <div style={{ height:"100vh", display:"flex", flexDirection:"column",
       background:C.bgSoft, alignItems:"center", justifyContent:"center", padding:32 }}>
       <div style={{ width:80, height:80, borderRadius:22, margin:"0 auto 20px",
         background:`linear-gradient(135deg,${C.red},${C.redDark})`,
@@ -1736,11 +1828,10 @@ function ProfilePage({ userProfile, onEdit, favorites, onBusiness, loggedIn, onL
       </div>
     </div>
   );
-  const favList = businesses.filter(b => favorites.includes(b.id));
-  const [tab, setTab] = useState("info"); // info | favs
+  
 
   return (
-    <div style={{ height:"100%", display:"flex", flexDirection:"column", background:C.bgSoft }}>
+    <div style={{ height:"100vh", display:"flex", flexDirection:"column", background:C.bgSoft }}>
       {/* Header — kırmızı */}
       <div style={{ background:`linear-gradient(135deg,${C.red},${C.redDark})`,
         padding:"28px 20px 48px", position:"relative", overflow:"hidden" }}>
@@ -1779,20 +1870,6 @@ function ProfilePage({ userProfile, onEdit, favorites, onBusiness, loggedIn, onL
         </div>
       </div>
 
-      {/* Stats şeridi */}
-      <div style={{ background:C.white, borderBottom:`1px solid ${C.border}`,
-        display:"flex", marginTop:-20 }}>
-        {[
-          { n: favList.length, l:"Favori" },
-          { n: userProfile.reviewCount||0, l:"Yorum" },
-        ].map((s,i,arr) => (
-          <div key={s.l} style={{ flex:1, padding:"14px 8px", textAlign:"center",
-            borderRight: i<arr.length-1 ? `1px solid ${C.border}` : "none" }}>
-            <div style={{ fontSize:18, fontWeight:800, color:C.red }}>{s.n}</div>
-            <div style={{ fontSize:10, color:C.textMute, fontWeight:600 }}>{s.l}</div>
-          </div>
-        ))}
-      </div>
 
       {/* Tab bar */}
       <div style={{ background:C.white, display:"flex",
@@ -1837,13 +1914,19 @@ function ProfilePage({ userProfile, onEdit, favorites, onBusiness, loggedIn, onL
               cursor:"pointer", background:C.white, color:C.textSub, marginBottom:12 }}>
               ✏️ Profili Düzenle
             </button>
+            <button onClick={onLogout} style={{ width:"100%", border:`1.5px solid #FCA5A5`,
+              borderRadius:13, padding:"13px", fontSize:13, fontWeight:700,
+              cursor:"pointer", background:"#FFF0F0", color:"#DC2626", marginBottom:12 }}>
+              🚪 Çıkış Yap
+            </button>
+
 
            
             {/* Bildirim Tercihleri */}
             <NotifPrefs/>
 
             {/* Admin erişimi (gizli — sadece gösterim amaçlı) */}
-            {userProfile.email==="myazici7@gmail.com" && <div onClick={onAdmin} style={{ background:C.white,
+            {userProfile.email==="pusulaamerika@gmail.com" && <div onClick={onAdmin} style={{ background:C.white,
               border:`1px solid ${C.border}`, borderRadius:13, padding:"13px 16px",
               marginBottom:12, display:"flex", alignItems:"center", gap:12,
               cursor:"pointer" }}>
@@ -1871,7 +1954,52 @@ function ProfilePage({ userProfile, onEdit, favorites, onBusiness, loggedIn, onL
             </div>
           </>
         )}
+{/* Favoriler */}
+        {tab==="favs" && (
+          favList.length===0 ? (
+            <div style={{ textAlign:"center", paddingTop:40 }}>
+              <div style={{ fontSize:40, marginBottom:12 }}>♡</div>
+              <div style={{ fontSize:14, color:C.textSub }}>Henüz favori eklenmedi</div>
+            </div>
+          ) : favList.map(b=>(
+            <div key={b.id} onClick={()=>onBusiness(b)} style={{ background:C.white,
+              border:`1px solid ${C.border}`, borderRadius:16, padding:"13px 16px",
+              marginBottom:10, display:"flex", gap:12, cursor:"pointer" }}>
+              <div style={{ width:46, height:46, borderRadius:12, flexShrink:0,
+                background:`linear-gradient(135deg,${C.redPale},#FFF5F6)`,
+                display:"flex", alignItems:"center", justifyContent:"center", fontSize:22 }}>
+                {b.img}
+              </div>
+              <div style={{ flex:1 }}>
+                <div style={{ fontSize:13, fontWeight:700, color:C.text, marginBottom:2 }}>{b.name}</div>
+                <div style={{ fontSize:11, color:C.textMute, marginBottom:4 }}>📍 {b.state}</div>
+                <div style={{ display:"flex", alignItems:"center", gap:4 }}>
+                  <Stars r={b.rating}/>
+                  <span style={{ fontSize:11, fontWeight:700, color:C.text }}>{b.rating}</span>
+                </div>
+              </div>
+            </div>
+          ))
+        )}
 
+        {/* Yorumlar */}
+        {tab==="reviews" && (
+          reviews.filter(r=>r.user===userProfile.name).length===0 ? (
+            <div style={{ textAlign:"center", paddingTop:40 }}>
+              <div style={{ fontSize:40, marginBottom:12 }}>💬</div>
+              <div style={{ fontSize:14, color:C.textSub }}>Henüz yorum yapılmadı</div>
+            </div>
+          ) : reviews.filter(r=>r.user===userProfile.name).map((r,i)=>(
+            <div key={i} style={{ background:C.white, border:`1px solid ${C.border}`,
+              borderRadius:16, padding:"13px 16px", marginBottom:10 }}>
+              <div style={{ display:"flex", alignItems:"center", gap:8, marginBottom:6 }}>
+                <Stars r={r.stars}/>
+                <span style={{ fontSize:11, color:C.textMute }}>{r.date}</span>
+              </div>
+              <div style={{ fontSize:13, color:C.text }}>{r.text}</div>
+            </div>
+          ))
+        )}
         {/* Favoriler */}
         {tab==="favs" && (
           favList.length===0 ? (
@@ -1923,7 +2051,7 @@ function EditProfile({ profile, onSave, onBack }) {
   };
 
   return (
-    <div style={{ height:"100%", display:"flex", flexDirection:"column", background:C.white }}>
+    <div style={{ height:"100vh", display:"flex", flexDirection:"column", background:C.white }}>
       <div style={{ background:`linear-gradient(135deg,${C.red},${C.redDark})`,
         padding:"20px 20px 24px" }}>
         <button onClick={onBack} style={{ background:"none", border:"none",
@@ -2009,7 +2137,20 @@ function EditProfile({ profile, onSave, onBack }) {
 
       <div style={{ padding:"12px 20px 32px", background:C.white,
         borderTop:`1px solid ${C.border}` }}>
-        <button onClick={()=>onSave(form)} style={{ width:"100%", border:"none",
+        <button onClick={async()=>{
+          const { data: { user } } = await supabase.auth.getUser();
+          if (user) {
+            await supabase.from("profiles").upsert({
+              id: user.id,
+              name: form.name,
+              email: form.email,
+              state: form.state,
+              city: form.city,
+              avatar: form.avatar,
+            });
+          }
+          onSave(form);
+        }} style={{ width:"100%", border:"none",
           borderRadius:13, padding:"14px", fontSize:14, fontWeight:700,
           cursor:"pointer", background:`linear-gradient(135deg,${C.red},${C.redDark})`,
           color:C.white }}>
@@ -2032,6 +2173,9 @@ function BusinessDetail({ business, onBack, favorites, toggleFav, reviews, onAdd
   const [replyDraft, setReplyDraft] = useState("");
 
   const bizReviews = reviews.filter(r=>r.bizId===business.id);
+  const avgRating = bizReviews.length
+    ? parseFloat((bizReviews.reduce((s,r)=>s+(r.stars||0),0)/bizReviews.length).toFixed(1))
+    : business.rating;
   const isFav = favorites.includes(business.id);
   const todayKey = new Date().toDateString();
   const alreadyReviewed = bizReviews.some(r=>r.user==="Sen" && r.date==="Az önce") ||
@@ -2047,7 +2191,7 @@ function BusinessDetail({ business, onBack, favorites, toggleFav, reviews, onAdd
   };
 
   return (
-    <div style={{ height:"100%", display:"flex", flexDirection:"column", background:C.bgSoft }}>
+    <div style={{ height:"100vh", display:"flex", flexDirection:"column", background:C.bgSoft }}>
 
       {/* Header */}
       <div style={{ background:C.white, borderBottom:`1px solid ${C.border}`, padding:"14px 18px" }}>
@@ -2064,7 +2208,7 @@ function BusinessDetail({ business, onBack, favorites, toggleFav, reviews, onAdd
               </div>
             )}
             <div onClick={()=>toggleFav(business.id)} style={{ cursor:"pointer",
-              fontSize:22, color:isFav?C.red:"#EECDD0" }}>
+              fontSize:28, color:isFav?"#E11D48":"#EECDD0" }}>
               {isFav?"♥":"♡"}
             </div>
           </div>
@@ -2143,8 +2287,8 @@ function BusinessDetail({ business, onBack, favorites, toggleFav, reviews, onAdd
                 })()}
               </div>
               <div style={{ display:"flex", alignItems:"center", gap:6 }}>
-                <Stars r={business.rating}/>
-                <span style={{ fontSize:13, fontWeight:800, color:C.text }}>{business.rating}</span>
+                <Stars r={avgRating}/>
+                <span style={{ fontSize:13, fontWeight:800, color:C.text }}>{avgRating}</span>
                 <span style={{ fontSize:11, color:C.textMute }}>
                   ({business.reviews + bizReviews.length} yorum)
                 </span>
@@ -2713,7 +2857,7 @@ function AuthScreen({ onAuth, onBack }) {
   };
 
   return (
-    <div style={{ height:"100%", display:"flex", flexDirection:"column", background:C.white }}>
+    <div style={{ height:"100vh", display:"flex", flexDirection:"column", background:C.white }}>
       <div style={{ background:`linear-gradient(135deg,${C.red},${C.redDark})`,
         padding:"32px 24px 40px", position:"relative", overflow:"hidden" }}>
         <div style={{ position:"absolute", bottom:-40, right:-40, width:130, height:130,
@@ -2725,7 +2869,12 @@ function AuthScreen({ onAuth, onBack }) {
             ← Geri
           </button>
         )}
-        <div style={{ marginBottom:16 }}><PusulaLogo size={36} dark={true}/></div>
+        <div style={{ marginBottom:16, display:"flex", alignItems:"center", justifyContent:"center", gap:12 }}>
+  <img src="/logo.png" alt="Pusula Amerika" style={{ height:60, width:"auto", background:"transparent" }}/>
+  <div className="playfair" style={{ fontSize:22, fontWeight:800, color:C.white }}>
+    Pusula <span style={{ color:"#C9A84C" }}>Amerika</span>
+  </div>
+</div>
         <div style={{ fontSize:20, fontWeight:800, color:C.white, marginBottom:4 }}>
           {mode==="login" ? "Hoş Geldiniz" : "Hesap Oluştur"}
         </div>
@@ -2861,7 +3010,7 @@ function PostJob({ onBack, onSuccess, userName }) {
   const canSubmit = form.title && form.company && form.location && form.state;
 
   if (submitted) return (
-    <div style={{ height:"100%", display:"flex", flexDirection:"column",
+    <div style={{ height:"100vh", display:"flex", flexDirection:"column",
       alignItems:"center", justifyContent:"center",
       background:C.white, padding:32, textAlign:"center" }}>
       <div style={{ width:80, height:80, borderRadius:22, margin:"0 auto 20px",
@@ -2881,7 +3030,7 @@ function PostJob({ onBack, onSuccess, userName }) {
   );
 
   return (
-    <div style={{ height:"100%", display:"flex", flexDirection:"column", background:C.white }}>
+    <div style={{ height:"100vh", display:"flex", flexDirection:"column", background:C.white }}>
       <div style={{ background:`linear-gradient(135deg,${C.red},${C.redDark})`,
         padding:"20px 20px 24px" }}>
         <button onClick={onBack} style={{ background:"none", border:"none",
@@ -3039,7 +3188,7 @@ function PostEvent({ onBack, onSuccess }) {
   const catOpts = ["Ulusal Bayram","Kültür & Sanat","Yemek","Networking","Müzik","Spor","Diğer"];
 
   if (submitted) return (
-    <div style={{ height:"100%", display:"flex", flexDirection:"column", background:C.white }}>
+    <div style={{ height:"100vh", display:"flex", flexDirection:"column", background:C.white }}>
       <div style={{ background:`linear-gradient(135deg,${C.red},${C.redDark})`,
         padding:"28px 24px 32px", textAlign:"center" }}>
         <div style={{ width:72, height:72, borderRadius:20, margin:"0 auto 16px",
@@ -3106,7 +3255,7 @@ function PostEvent({ onBack, onSuccess }) {
   );
 
   return (
-    <div style={{ height:"100%", display:"flex", flexDirection:"column", background:C.white }}>
+    <div style={{ height:"100vh", display:"flex", flexDirection:"column", background:C.white }}>
       <div style={{ background:`linear-gradient(135deg,${C.red},${C.redDark})`,
         padding:"20px 20px 24px" }}>
         <button onClick={onBack} style={{ background:"none", border:"none",
@@ -3268,7 +3417,7 @@ function BusinessOwnerProfile({ business, onBack, reviews, onEdit }) {
     : business.rating;
 
   return (
-    <div style={{ height:"100%", display:"flex", flexDirection:"column", background:C.bgSoft }}>
+    <div style={{ height:"100vh", display:"flex", flexDirection:"column", background:C.bgSoft }}>
       <div style={{ background:`linear-gradient(135deg,${C.red},${C.redDark})`,
         padding:"20px 20px 28px" }}>
         <button onClick={onBack} style={{ background:"none", border:"none",
@@ -3452,7 +3601,7 @@ function BusinessOwnerProfile({ business, onBack, reviews, onEdit }) {
 function NotificationsScreen({ onBack, notifications, onMarkRead }) {
   const unread = notifications.filter(n=>!n.read).length;
   return (
-    <div style={{ height:"100%", display:"flex", flexDirection:"column", background:C.bgSoft }}>
+    <div style={{ height:"100vh", display:"flex", flexDirection:"column", background:C.bgSoft }}>
       <div style={{ background:`linear-gradient(135deg,${C.red},${C.redDark})`, padding:"20px 20px 24px" }}>
         <button onClick={onBack} style={{ background:"none", border:"none",
           color:"rgba(255,255,255,0.75)", fontSize:13, fontWeight:700,
@@ -3688,7 +3837,7 @@ function SearchOverlay({ history, onSelect, onClear, onClose }) {
 function UserProfilePage({ user, reviews, onBack }) {
   const userReviews = reviews.filter(r=>r.user===user.name);
   return (
-    <div style={{ height:"100%", display:"flex", flexDirection:"column", background:C.bgSoft }}>
+    <div style={{ height:"100vh", display:"flex", flexDirection:"column", background:C.bgSoft }}>
       <div style={{ background:`linear-gradient(135deg,${C.red},${C.redDark})`,
         padding:"20px 20px 32px" }}>
         <button onClick={onBack} style={{ background:"none", border:"none",
@@ -3841,7 +3990,7 @@ function AdminPanel({ onBack, pendingBiz }) {
   const current  = listMap[tab]||pending;
 
   return (
-    <div style={{ height:"100%", display:"flex", flexDirection:"column", background:C.bgSoft }}>
+    <div style={{ height:"100vh", display:"flex", flexDirection:"column", background:C.bgSoft }}>
       <div style={{ background:"linear-gradient(135deg,#0D1F3C,#060F1E)", padding:"20px 20px 24px" }}>
         <button onClick={onBack} style={{ background:"none", border:"none",
           color:"rgba(255,255,255,0.7)", fontSize:13, fontWeight:700,
@@ -3996,6 +4145,7 @@ useEffect(() => {
       const { data: biz } = await supabase.from("businesses").select("*");
       const { data: job } = await supabase.from("jobs").select("*");
       const { data: evt } = await supabase.from("events").select("*");
+      const { data: rev } = await supabase.from("reviews").select("*");
       if (biz) setDbBusinesses(biz.map(b=>({
         ...b, cat: b.category, desc: b.description,
         img: categories.find(c=>c.id===b.category)?.icon || "🏢",
@@ -4010,6 +4160,19 @@ useEffect(() => {
         ...e, cat: e.category, img: "🎉", attendees: 0,
         free: e.free, price: e.price||null,
       })));
+      if (rev) setReviews(rev.map(r=>({
+        bizId: r.business_id,
+        stars: r.rating,
+        text: r.comment,
+        user: r.user_name,
+        avatar: "👤",
+        date: new Date(r.created_at).toLocaleDateString("tr-TR"),
+      })));
+      const { data: { user } } = await supabase.auth.getUser();
+      if (user) {
+        const { data: prof } = await supabase.from("profiles").select("favorites").eq("id", user.id).single();
+        if (prof?.favorites) setFavorites(prof.favorites);
+      }
     };
     fetchData();
   }, []);
@@ -4021,12 +4184,7 @@ useEffect(() => {
     { icon:"🎉", title:"Yakınınızda yeni etkinlik",                  body:"Türk Film Festivali · Brooklyn",              time:"3 gün önce",   read:true  },
   ]);
 
-  const [reviews, setReviews] = useState([
-    { bizId:1, stars:5, text:"Harika bir restoran, Türk lezzetleri muhteşem!", user:"Mehmet A.", avatar:"👨", date:"2 gün önce"   },
-    { bizId:1, stars:4, text:"Hizmet çok iyiydi, tekrar geleceğim.",           user:"Ayşe K.",   avatar:"👩", date:"1 hafta önce" },
-    { bizId:2, stars:5, text:"Göçmenlik davamı çok profesyonelce halletti.",   user:"Emre T.",   avatar:"👨", date:"3 gün önce"   },
-    { bizId:3, stars:5, text:"Dr. Kaya çok ilgili, Türkçe konuşuyor.",         user:"Fatma Y.",  avatar:"👩", date:"5 gün önce"   },
-  ]);
+  const [reviews, setReviews] = useState([]);
 
   const [userProfile, setUserProfile] = useState({
     name:"", avatar:"👤", city:"", state:"", email:"", phone:"",
@@ -4045,8 +4203,14 @@ useEffect(() => {
 
   const unreadCount = notifications.filter(n=>!n.read).length;
 
-  const toggleFav = id =>
-    setFavorites(prev => prev.includes(id) ? prev.filter(x=>x!==id) : [...prev,id]);
+    const toggleFav = async id => {
+    const newFavs = favorites.includes(id) ? favorites.filter(x=>x!==id) : [...favorites,id];
+    setFavorites(newFavs);
+    const { data: { user } } = await supabase.auth.getUser();
+    if (user) {
+      await supabase.from("profiles").update({ favorites: newFavs }).eq("id", user.id);
+    }
+  };
 
   // FIX 7: Yorum bildirimi işletme adını gösteriyor
   const addReview = async r => {
@@ -4186,9 +4350,9 @@ useEffect(() => {
   };
 
   const W = ({children}) => (
-    <div style={{ maxWidth:430, margin:"0 auto", height:"100vh",
+    <div style={{ maxWidth:430, margin:"0 auto", minHeight:"100vh",
       fontFamily:"'Montserrat',system-ui,sans-serif",
-      position:"relative", overflow:"hidden" }}>
+      position:"relative", overflowY:"auto" }}>
       <FontInjector/>
       {showSplash && <SplashScreen onDone={()=>setShowSplash(false)}/>}
       {children}
@@ -4232,7 +4396,7 @@ useEffect(() => {
 
   const navItems = [
     { id:"home",    icon:"🏠", label:lang==="TR"?"Ana Sayfa":"Home"    },
-    { id:"favs",    icon:"❤️",  label:lang==="TR"?"Favoriler":"Saved"   },
+    { id:"contact", icon:"📬", label:"İletişim" },
     { id:"profile", icon:"👤", label:lang==="TR"?"Profil":"Profile"    },
   ];
 
@@ -4242,7 +4406,7 @@ useEffect(() => {
       display:"flex", flexDirection:"column", position:"relative" }}>
       <FontInjector/>
       {showSplash && <SplashScreen onDone={()=>setShowSplash(false)}/>}
-      <div style={{ flex:1, overflow:"hidden" }}>
+      <div style={{ flex:1, overflowY:"auto" }}>
         {tab==="home"
           ? <Home userState={userState} userCity={userCity} onBusiness={openBusiness}
               onTab={setSubScreen} favorites={favorites} toggleFav={toggleFav}
@@ -4256,7 +4420,8 @@ useEffect(() => {
               dbJobs={dbJobs}
               dbEvents={dbEvents}/>
           : tab==="favs"
-          ? <Favorites favorites={favorites} onBusiness={openBusiness} toggleFav={toggleFav}/>
+          ? <Favorites favorites={favorites} onBusiness={openBusiness} toggleFav={toggleFav} dbBusinesses={dbBusinesses}
+              reviews={reviews}/>
           : tab==="profile"
           ? <ProfilePage userProfile={userProfile}
               loggedIn={loggedIn} onLogin={()=>setScreen("auth")}
@@ -4266,7 +4431,12 @@ useEffect(() => {
               onMyBusiness={()=>setScreen("bizprofile")}
               onRegisterBiz={loggedIn?()=>setScreen("register"):()=>setScreen("auth")}
               lang={lang} onLangChange={setLang}
-              onAdmin={()=>setScreen("admin")}/>
+              onAdmin={()=>setScreen("admin")}
+              onLogout={async()=>{ await supabase.auth.signOut(); setLoggedIn(false); setScreen("main"); }}
+              dbBusinesses={dbBusinesses}
+              reviews={reviews}/>
+          : tab==="contact"
+          ? <ContactPage/>
           : null}
       </div>
       <div style={{
