@@ -1767,43 +1767,7 @@ function RegisterBusiness({ onBack, onSuccess }) {
               Devam Et →
             </button>
           ) : (
-            <button onClick={async ()=>{
-  const { data: { user } } = await supabase.auth.getUser();
-  
-  let imageUrl = null;
-  if (form.image) {
-    const ext = form.image.name.split('.').pop();
-    const fileName = `${Date.now()}.${ext}`;
-    const { data: uploadData, error: uploadError } = await supabase.storage
-      .from('events')
-      .upload(fileName, form.image, { contentType: form.image.type });
-    console.log("Upload data:", uploadData, "Error:", uploadError);
-    if (uploadData) {
-      const { data: urlData } = supabase.storage
-        .from('events')
-        .getPublicUrl(fileName);
-      imageUrl = urlData.publicUrl;
-      console.log("Image URL:", imageUrl);
-    }
-  }
-
-  await supabase.from("events").insert({
-    title: form.title,
-    org: form.org,
-    date: form.date,
-    location: form.location,
-    state: form.state,
-    zip: form.zip,
-    category: form.cat,
-    description: form.description,
-    free: form.free,
-    price: form.price,
-    image_url: imageUrl,
-    owner_id: user?.id || null,
-  });
-  setSubmitted(true);
-  onSuccess && onSuccess({...form, imageUrl, image_url: imageUrl});
-}} style={{ flex:2, border:"none",
+            <button onClick={()=>{ onSuccess && onSuccess(form); }} style={{ flex:2, border:"none",
               borderRadius:13, padding:"14px", fontSize:14, fontWeight:700, cursor:"pointer",
               background:`linear-gradient(135deg,${C.red},${C.redDark})`, color:C.white }}>
               🧭 Yayına Al
@@ -3560,7 +3524,8 @@ function PostJob({ onBack, onSuccess, userName }) {
       <div style={{ padding:"12px 20px 32px", background:C.white,
         borderTop:`1px solid ${C.border}` }}>
         <button onClick={async()=>{ if(!canSubmit) return;
-  const { data: { user } } = await supabase.auth.getUser();
+  const { data: { session: _s } } = await supabase.auth.getSession();
+  const user = _s?.user;
   
   let imageUrl = null;
   if (form.image) {
@@ -3569,13 +3534,11 @@ function PostJob({ onBack, onSuccess, userName }) {
     const { data: uploadData, error: uploadError } = await supabase.storage
       .from('events')
       .upload(fileName, form.image, { contentType: form.image.type });
-    console.log("Upload data:", uploadData, "Error:", uploadError);
     if (uploadData) {
       const { data: urlData } = supabase.storage
         .from('events')
         .getPublicUrl(fileName);
       imageUrl = urlData.publicUrl;
-      console.log("Image URL:", imageUrl);
     }
   }
 
@@ -3934,8 +3897,6 @@ function PostEvent({ onBack, onSuccess }) {
     const { data: uploadData, error: uploadError } = await supabase.storage
       .from('events')
       .upload(fileName, form.image, { contentType: form.image.type });
-    console.log("Upload data:", uploadData);
-console.log("Upload error:", JSON.stringify(uploadError));
     if (uploadData) {
       const { data: urlData } = supabase.storage.from('events').getPublicUrl(fileName);
       imageUrl = urlData.publicUrl;
@@ -5099,7 +5060,8 @@ const [selectedEventFromProfile, setSelectedEventFromProfile] = useState(null);
   // FIX 1: İşletme kaydı setMyBusiness'ı dolduruyor
   const handleRegisterBiz = async (form) => {
     const catInfo = categories.find(c=>c.id===form.category)||{};
-    const { data: { user } } = await supabase.auth.getUser();
+    const { data: { session } } = await supabase.auth.getSession();
+    const user = session?.user;
 
     let imageUrl = null;
     if (form.image) {
