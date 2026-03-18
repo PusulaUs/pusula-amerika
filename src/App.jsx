@@ -4696,7 +4696,7 @@ export default function PusulaApp() {
   const [dbBusinesses, setDbBusinesses] = useState([]);
   const [dbJobs,       setDbJobs]       = useState([]);
   const [dbEvents,     setDbEvents]     = useState([]);
-  const [screen,      setScreen]      = useState("onboarding");
+  const [screen,      setScreen]      = useState(localStorage.getItem("pusula_onboarded") ? "main" : "onboarding");
   const [tab,         setTab]         = useState("home");
   const [business,    setBusiness]    = useState(null);
   const [bizHistory,  setBizHistory]  = useState([]); // FIX 3: navigation stack
@@ -4966,7 +4966,7 @@ const [selectedEventFromProfile, setSelectedEventFromProfile] = useState(null);
 
   // Full-screen routes
   // FIX: Onboarding artık eyalet+şehir alıyor
-  if (screen==="onboarding")  return <W><Onboarding onDone={st=>{ setUserState(st); setScreen("main"); }}/></W>;
+  if (screen==="onboarding")  return <W><Onboarding onDone={st=>{ setUserState(st); localStorage.setItem("pusula_onboarded","1"); setScreen("main"); }}/></W>;
   if (screen==="auth")        return <W><AuthScreen onAuth={handleAuth} onBack={()=>setScreen("main")}/></W>;
   if (screen==="register")    return <W><RegisterBusiness onBack={()=>setScreen("main")} onSuccess={handleRegisterBiz}/></W>;
   if (screen==="editprofile") return <W><EditProfile profile={userProfile} onBack={()=>setScreen("main")} onSave={p=>{setUserProfile(p);setScreen("main");}}/></W>;
