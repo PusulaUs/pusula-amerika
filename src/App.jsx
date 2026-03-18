@@ -4964,7 +4964,6 @@ useEffect(() => {
 
     return () => subscription.unsubscribe();
   }, []);
-  }, []);
   const [notifications, setNotifications] = useState([
     { icon:"✅", title:"Bosphorus Kitchen yorumunuza yanıt verdi", body:"\"Teşekkürler, sizi tekrar görmek isteriz!\"", time:"2 saat önce",   read:false },
     { icon:"🔔", title:"Yeni iş ilanı: Türkçe Satış Temsilcisi",   body:"Paterson, NJ · $45K–$60K",                   time:"5 saat önce",   read:false },
