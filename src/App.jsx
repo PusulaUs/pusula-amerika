@@ -4749,11 +4749,18 @@ useEffect(() => {
       })));
       const { data: { user } } = await supabase.auth.getUser();
       if (user) {
-        const { data: prof } = await supabase.from("profiles").select("favorites").eq("id", user.id).single();
+        setLoggedIn(true);
+        const { data: prof } = await supabase.from("profiles").select("*").eq("id", user.id).single();
         if (prof?.favorites) setFavorites(prof.favorites);
+        if (prof) setUserProfile(prof);
       }
     };
     fetchData();
+
+    const { data: { subscription } } = supabase.auth.onAuthStateChange((_event, session) => {
+      setLoggedIn(!!session);
+    });
+    return () => subscription.unsubscribe();
   }, []);
   const [notifications, setNotifications] = useState([
     { icon:"✅", title:"Bosphorus Kitchen yorumunuza yanıt verdi", body:"\"Teşekkürler, sizi tekrar görmek isteriz!\"", time:"2 saat önce",   read:false },
