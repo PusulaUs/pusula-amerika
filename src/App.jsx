@@ -4672,84 +4672,104 @@ function ReportModal({ type, onClose }) {
 }
 
 function AdminPanel({ onBack, pendingBiz }) {
-  const [tab, setTab]   = useState("pending");
+  const [tab, setTab] = useState("pending");
   const [items, setItems] = useState(pendingBiz);
   const [removeReqs, setRemoveReqs] = useState([]);
+  const [allEvents, setAllEvents] = useState([]);
+  const [allJobs, setAllJobs] = useState([]);
+  const [stats, setStats] = useState({ users:0 });
 
   useEffect(() => {
-    const fetchRemoval = async () => {
-      const { data } = await supabase.from("removal_requests").select("*");
-      if (data) setRemoveReqs(data.map(r=>({
-        id: r.id,
-        bizId: r.business_id,
-        name: r.business_name,
-        reason: r.reason,
-        date: new Date(r.created_at).toLocaleDateString("tr-TR"),
-      })));
+    const load = async () => {
+      const { data: rems } = await supabase.from("removal_requests").select("*");
+      if (rems) setRemoveReqs(rems.map(r=>({ id:r.id, bizId:r.business_id, name:r.business_name, reason:r.reason, date:new Date(r.created_at).toLocaleDateString("tr-TR") })));
+      const { data: evts } = await supabase.from("events").select("*").order("created_at", { ascending:false });
+      if (evts) setAllEvents(evts);
+      const { data: jobs } = await supabase.from("jobs").select("*").order("created_at", { ascending:false });
+      if (jobs) setAllJobs(jobs);
+      const { count } = await supabase.from("profiles").select("*", { count:"exact", head:true });
+      if (count) setStats({ users: count });
     };
-    fetchRemoval();
+    load();
   }, []);
+
   const approve = async id => {
-    await supabase.from("businesses").update({ verified: true, status:"approved" }).eq("id", id);
+    await supabase.from("businesses").update({ verified:true, status:"approved" }).eq("id", id);
     setItems(p=>p.map(x=>x.id===id?{...x,status:"approved",verified:true}:x));
   };
   const reject = async id => {
-    await supabase.from("businesses").update({ verified: false, status:"rejected" }).eq("id", id);
+    await supabase.from("businesses").update({ verified:false, status:"rejected" }).eq("id", id);
     setItems(p=>p.map(x=>x.id===id?{...x,status:"rejected",verified:false}:x));
   };
-  const removeApprove = async id => {
+  const deleteBiz = async id => {
+    if (!window.confirm("Bu işletmeyi silmek istediğinizden emin misiniz?")) return;
     await supabase.from("businesses").delete().eq("id", id);
-    setRemoveReqs(p=>p.filter(x=>x.id!==id));
     setItems(p=>p.filter(x=>x.id!==id));
   };
+  const removeApprove = async (reqId, bizId) => {
+    await supabase.from("businesses").delete().eq("id", bizId);
+    await supabase.from("removal_requests").delete().eq("id", reqId);
+    setRemoveReqs(p=>p.filter(x=>x.id!==reqId));
+    setItems(p=>p.filter(x=>x.id!==bizId));
+  };
+  const deleteEvent = async id => {
+    if (!window.confirm("Bu etkinliği silmek istediğinizden emin misiniz?")) return;
+    await supabase.from("events").delete().eq("id", id);
+    setAllEvents(p=>p.filter(x=>x.id!==id));
+  };
+  const deleteJob = async id => {
+    if (!window.confirm("Bu iş ilanını silmek istediğinizden emin misiniz?")) return;
+    await supabase.from("jobs").delete().eq("id", id);
+    setAllJobs(p=>p.filter(x=>x.id!==id));
+  };
+
   const pending  = items.filter(x=>!x.status && x.verified!==true);
   const approved = items.filter(x=>x.status==="approved" || x.verified===true);
   const rejected = items.filter(x=>x.status==="rejected");
-  const listMap  = {pending, approved, rejected};
-  const current  = listMap[tab]||pending;
 
   return (
     <div style={{ height:"100vh", display:"flex", flexDirection:"column", background:C.bgSoft }}>
+      {/* Header */}
       <div style={{ background:"linear-gradient(135deg,#0D1F3C,#060F1E)", padding:"20px 20px 24px" }}>
-        <button onClick={onBack} style={{ background:"none", border:"none",
-          color:"rgba(255,255,255,0.7)", fontSize:13, fontWeight:700,
-          cursor:"pointer", marginBottom:14, display:"flex", alignItems:"center", gap:6 }}>← Çıkış</button>
+        <button onClick={onBack} style={{ background:"none", border:"none", color:"rgba(255,255,255,0.7)", fontSize:13, fontWeight:700, cursor:"pointer", marginBottom:14, display:"flex", alignItems:"center", gap:6 }}>← Çıkış</button>
         <div style={{ display:"flex", alignItems:"center", gap:12, marginBottom:16 }}>
-          <div style={{ width:42, height:42, borderRadius:12,
-            background:"rgba(255,255,255,0.15)",
-            display:"flex", alignItems:"center", justifyContent:"center", fontSize:22 }}>🛡️</div>
+          <div style={{ width:42, height:42, borderRadius:12, background:"rgba(255,255,255,0.15)", display:"flex", alignItems:"center", justifyContent:"center", fontSize:22 }}>🛡️</div>
           <div>
             <div style={{ fontSize:18, fontWeight:700, color:C.white }}>Admin Paneli</div>
             <div style={{ fontSize:11, color:"rgba(255,255,255,0.55)" }}>Pusula Yönetim</div>
           </div>
         </div>
-        <div style={{ display:"flex", gap:8 }}>
+        <div style={{ display:"flex", gap:6 }}>
           {[
-            {n:items.length,       l:"Toplam",    icon:"📋"},
-            {n:pending.length,     l:"Bekleyen",  icon:"⏳"},
-            {n:approved.length,    l:"Onaylı",    icon:"✅"},
-            {n:removeReqs.length,  l:"Kaldırma",  icon:"🗑️"},
+            {n:items.length,      l:"İşletme",  icon:"🏢"},
+            {n:pending.length,    l:"Bekleyen", icon:"⏳"},
+            {n:allEvents.length,  l:"Etkinlik", icon:"🎉"},
+            {n:allJobs.length,    l:"İlan",     icon:"💼"},
+            {n:stats.users,       l:"Üye",      icon:"👥"},
           ].map(s=>(
-            <div key={s.l} style={{ flex:1, background:"rgba(255,255,255,0.08)",
-              borderRadius:12, padding:"10px 6px", textAlign:"center" }}>
-              <div style={{ fontSize:12, marginBottom:3 }}>{s.icon}</div>
-              <div style={{ fontSize:16, fontWeight:800, color:C.white }}>{s.n}</div>
-              <div style={{ fontSize:9, color:"rgba(255,255,255,0.55)", fontWeight:600 }}>{s.l}</div>
+            <div key={s.l} style={{ flex:1, background:"rgba(255,255,255,0.08)", borderRadius:10, padding:"8px 4px", textAlign:"center" }}>
+              <div style={{ fontSize:11, marginBottom:2 }}>{s.icon}</div>
+              <div style={{ fontSize:14, fontWeight:800, color:C.white }}>{s.n}</div>
+              <div style={{ fontSize:8, color:"rgba(255,255,255,0.5)", fontWeight:600 }}>{s.l}</div>
             </div>
           ))}
         </div>
       </div>
 
-      <div style={{ background:C.white, borderBottom:`1px solid ${C.border}`, display:"flex" }}>
+      {/* Tabs */}
+      <div style={{ background:C.white, borderBottom:`1px solid ${C.border}`, display:"flex", overflowX:"auto" }}>
         {[
-          {id:"pending",  label:`Bekleyen (${pending.length})`},
-          {id:"approved", label:`Onaylı (${approved.length})`},
-          {id:"rejected", label:`Reddedilen (${rejected.length})`},
+          {id:"pending",  label:`⏳ Bekleyen (${pending.length})`},
+          {id:"approved", label:`✅ Onaylı (${approved.length})`},
+          {id:"rejected", label:`❌ Reddedilen (${rejected.length})`},
+          {id:"events",   label:`🎉 Etkinlikler (${allEvents.length})`},
+          {id:"jobs",     label:`💼 İlanlar (${allJobs.length})`},
           {id:"remove",   label:`🗑️ Kaldırma (${removeReqs.length})`},
         ].map(t=>(
-          <div key={t.id} onClick={()=>setTab(t.id)} style={{ flex:1,
-            padding:"12px 2px", textAlign:"center", fontSize:10, fontWeight:700,
-            cursor:"pointer", color:tab===t.id?"#0D1F3C":C.textMute,
+          <div key={t.id} onClick={()=>setTab(t.id)} style={{ flexShrink:0,
+            padding:"11px 10px", textAlign:"center", fontSize:10, fontWeight:700,
+            cursor:"pointer", whiteSpace:"nowrap",
+            color:tab===t.id?"#0D1F3C":C.textMute,
             borderBottom:tab===t.id?"2.5px solid #0D1F3C":"2.5px solid transparent" }}>
             {t.label}
           </div>
@@ -4757,84 +4777,92 @@ function AdminPanel({ onBack, pendingBiz }) {
       </div>
 
       <div style={{ flex:1, overflowY:"auto", padding:"14px 18px" }}>
+
         {/* Kaldırma talepleri */}
-        {tab==="remove" ? (
-          removeReqs.length===0 ? (
-            <div style={{ textAlign:"center", padding:"40px 0" }}>
-              <div style={{ fontSize:36, marginBottom:10 }}>✅</div>
-              <div style={{ fontSize:13, color:C.textMute }}>Bekleyen kaldırma talebi yok</div>
+        {tab==="remove" && (removeReqs.length===0 ? (
+          <div style={{ textAlign:"center", padding:"40px 0" }}>
+            <div style={{ fontSize:36, marginBottom:10 }}>✅</div>
+            <div style={{ fontSize:13, color:C.textMute }}>Bekleyen kaldırma talebi yok</div>
+          </div>
+        ) : removeReqs.map(req=>(
+          <div key={req.id} style={{ background:C.white, border:`1px solid #FEE2E2`, borderRadius:16, padding:"14px 16px", marginBottom:10 }}>
+            <div style={{ fontSize:14, fontWeight:700, color:C.text, marginBottom:4 }}>{req.name}</div>
+            <div style={{ fontSize:12, color:C.textSub, marginBottom:4 }}>📝 {req.reason}</div>
+            <div style={{ fontSize:11, color:C.textMute, marginBottom:12 }}>🕐 {req.date}</div>
+            <div style={{ display:"flex", gap:8 }}>
+              <button onClick={()=>removeApprove(req.id, req.bizId)} style={{ flex:1, border:"none", borderRadius:10, padding:"10px", fontSize:12, fontWeight:700, cursor:"pointer", background:"#FEE2E2", color:"#991B1B" }}>🗑️ Sil</button>
+              <button onClick={()=>setRemoveReqs(p=>p.filter(x=>x.id!==req.id))} style={{ flex:1, border:"none", borderRadius:10, padding:"10px", fontSize:12, fontWeight:700, cursor:"pointer", background:"#D1FAE5", color:"#065F46" }}>✋ Reddet</button>
             </div>
-          ) : removeReqs.map(req=>(
-            <div key={req.id} style={{ background:C.white, border:`1px solid #FEE2E2`,
-              borderRadius:16, padding:"14px 16px", marginBottom:10 }}>
-              <div style={{ fontSize:14, fontWeight:700, color:C.text, marginBottom:4 }}>{req.name}</div>
-              <div style={{ fontSize:12, color:C.textSub, marginBottom:4 }}>
-                📝 Sebep: {req.reason}
+          </div>
+        )))}
+
+        {/* Etkinlikler */}
+        {tab==="events" && (allEvents.length===0 ? (
+          <div style={{ textAlign:"center", padding:"40px 0", fontSize:13, color:C.textMute }}>Etkinlik yok</div>
+        ) : allEvents.map(ev=>(
+          <div key={ev.id} style={{ background:C.white, border:`1px solid ${C.border}`, borderRadius:16, padding:"14px 16px", marginBottom:10 }}>
+            <div style={{ display:"flex", justifyContent:"space-between", alignItems:"flex-start", marginBottom:6 }}>
+              <div style={{ flex:1 }}>
+                <div style={{ fontSize:13, fontWeight:700, color:C.text, marginBottom:3 }}>{ev.title}</div>
+                <div style={{ fontSize:11, color:C.textMute, marginBottom:2 }}>📍 {ev.location} · {ev.state}</div>
+                <div style={{ fontSize:11, color:C.textMute }}>📅 {ev.date} · {ev.org}</div>
               </div>
-              <div style={{ fontSize:11, color:C.textMute, marginBottom:12 }}>🕐 {req.date}</div>
+              {ev.image_url && <img src={ev.image_url} alt="" style={{ width:48, height:48, borderRadius:10, objectFit:"cover", flexShrink:0, marginLeft:10 }}/>}
+            </div>
+            <button onClick={()=>deleteEvent(ev.id)} style={{ width:"100%", border:"none", borderRadius:10, padding:"9px", fontSize:12, fontWeight:700, cursor:"pointer", background:"#FEE2E2", color:"#991B1B", marginTop:6 }}>🗑️ Etkinliği Sil</button>
+          </div>
+        )))}
+
+        {/* İş İlanları */}
+        {tab==="jobs" && (allJobs.length===0 ? (
+          <div style={{ textAlign:"center", padding:"40px 0", fontSize:13, color:C.textMute }}>İlan yok</div>
+        ) : allJobs.map(job=>(
+          <div key={job.id} style={{ background:C.white, border:`1px solid ${C.border}`, borderRadius:16, padding:"14px 16px", marginBottom:10 }}>
+            <div style={{ fontSize:13, fontWeight:700, color:C.text, marginBottom:3 }}>{job.title}</div>
+            <div style={{ fontSize:11, color:C.textMute, marginBottom:2 }}>🏢 {job.company} · 📍 {job.city}, {job.state}</div>
+            <div style={{ fontSize:11, color:C.textMute, marginBottom:8 }}>💰 {job.salary} · 📅 {new Date(job.created_at).toLocaleDateString("tr-TR")}</div>
+            <button onClick={()=>deleteJob(job.id)} style={{ width:"100%", border:"none", borderRadius:10, padding:"9px", fontSize:12, fontWeight:700, cursor:"pointer", background:"#FEE2E2", color:"#991B1B" }}>🗑️ İlanı Sil</button>
+          </div>
+        )))}
+
+        {/* İşletmeler (pending/approved/rejected) */}
+        {["pending","approved","rejected"].includes(tab) && (
+          (tab==="pending"?pending:tab==="approved"?approved:rejected).length===0 ? (
+            <div style={{ textAlign:"center", padding:"40px 0" }}>
+              <div style={{ fontSize:36, marginBottom:10 }}>{tab==="pending"?"⏳":tab==="approved"?"✅":"❌"}</div>
+              <div style={{ fontSize:13, color:C.textMute }}>Bu listede kayıt yok</div>
+            </div>
+          ) : (tab==="pending"?pending:tab==="approved"?approved:rejected).map(biz=>(
+            <div key={biz.id} style={{ background:C.white, border:`1px solid ${C.border}`, borderRadius:16, padding:"14px 16px", marginBottom:10, boxShadow:"0 1px 4px rgba(0,0,0,0.05)" }}>
+              <div style={{ display:"flex", gap:12, alignItems:"flex-start", marginBottom:10 }}>
+                {biz.image_url
+                  ? <img src={biz.image_url} alt="" style={{ width:44, height:44, borderRadius:12, objectFit:"cover", flexShrink:0 }}/>
+                  : <div style={{ width:44, height:44, borderRadius:12, flexShrink:0, background:C.redPale, border:`1px solid ${C.border}`, display:"flex", alignItems:"center", justifyContent:"center", fontSize:22 }}>{biz.img||"🏢"}</div>
+                }
+                <div style={{ flex:1 }}>
+                  <div style={{ fontSize:14, fontWeight:700, color:C.text, marginBottom:2 }}>{biz.name}</div>
+                  <div style={{ fontSize:11, color:C.textMute, marginBottom:2 }}>📍 {biz.city}, {biz.state}</div>
+                  <div style={{ fontSize:11, color:C.textMute }}>📞 {biz.phone}</div>
+                </div>
+                {biz.status && (
+                  <span style={{ background:biz.status==="approved"?"#D1FAE5":"#FEE2E2", color:biz.status==="approved"?"#065F46":"#991B1B", borderRadius:8, padding:"3px 10px", fontSize:10, fontWeight:700 }}>
+                    {biz.status==="approved"?"✅ Onaylı":"❌ Reddedildi"}
+                  </span>
+                )}
+              </div>
+              <div style={{ fontSize:12, color:C.textSub, lineHeight:1.5, background:C.redPale, borderRadius:10, padding:"9px 12px", marginBottom:10 }}>
+                {biz.desc||biz.description||"Açıklama yok"}
+              </div>
               <div style={{ display:"flex", gap:8 }}>
-                <button onClick={()=>removeApprove(req.id)} style={{ flex:1, border:"none",
-                  borderRadius:10, padding:"10px", fontSize:12, fontWeight:700,
-                  cursor:"pointer", background:"#FEE2E2", color:"#991B1B" }}>
-                  🗑️ Kaldır
-                </button>
-                <button onClick={()=>setRemoveReqs(p=>p.filter(x=>x.id!==req.id))}
-                  style={{ flex:1, border:"none", borderRadius:10, padding:"10px",
-                    fontSize:12, fontWeight:700, cursor:"pointer",
-                    background:"#D1FAE5", color:"#065F46" }}>
-                  ❌ Reddet
-                </button>
+                {!biz.status && <>
+                  <button onClick={()=>approve(biz.id)} style={{ flex:1, border:"none", borderRadius:10, padding:"10px", fontSize:12, fontWeight:700, cursor:"pointer", background:"#D1FAE5", color:"#065F46" }}>✅ Onayla</button>
+                  <button onClick={()=>reject(biz.id)} style={{ flex:1, border:"none", borderRadius:10, padding:"10px", fontSize:12, fontWeight:700, cursor:"pointer", background:"#FEE2E2", color:"#991B1B" }}>❌ Reddet</button>
+                </>}
+                <button onClick={()=>deleteBiz(biz.id)} style={{ flex:biz.status?2:1, border:"none", borderRadius:10, padding:"10px", fontSize:12, fontWeight:700, cursor:"pointer", background:"#1E293B", color:C.white }}>🗑️ Sil</button>
               </div>
             </div>
           ))
-        ) : current.length===0 ? (
-          <div style={{ textAlign:"center", padding:"40px 0" }}>
-            <div style={{ fontSize:36, marginBottom:10 }}>
-              {tab==="pending"?"⏳":tab==="approved"?"✅":"❌"}
-            </div>
-            <div style={{ fontSize:13, color:C.textMute }}>Bu listede kayıt yok</div>
-          </div>
-        ) : current.map(biz=>(
-          <div key={biz.id} style={{ background:C.white, border:`1px solid ${C.border}`,
-            borderRadius:16, padding:"14px 16px", marginBottom:10,
-            boxShadow:"0 1px 4px rgba(0,0,0,0.05)" }}>
-            <div style={{ display:"flex", gap:12, alignItems:"flex-start", marginBottom:10 }}>
-              <div style={{ width:44, height:44, borderRadius:12, flexShrink:0,
-                background:`linear-gradient(135deg,${C.redPale},#FFF5F6)`,
-                border:`1px solid ${C.border}`,
-                display:"flex", alignItems:"center", justifyContent:"center", fontSize:22 }}>
-                {biz.img||"🏢"}
-              </div>
-              <div style={{ flex:1 }}>
-                <div style={{ fontSize:14, fontWeight:700, color:C.text, marginBottom:2 }}>{biz.name}</div>
-                <div style={{ fontSize:11, color:C.textMute, marginBottom:3 }}>📍 {biz.city}, {biz.state}</div>
-                <div style={{ fontSize:11, color:C.textMute }}>📞 {biz.phone}</div>
-              </div>
-              {biz.status && (
-                <span style={{
-                  background:biz.status==="approved"?"#D1FAE5":"#FEE2E2",
-                  color:      biz.status==="approved"?"#065F46":"#991B1B",
-                  borderRadius:8, padding:"3px 10px", fontSize:10, fontWeight:700 }}>
-                  {biz.status==="approved"?"✅ Onaylı":"❌ Reddedildi"}
-                </span>
-              )}
-            </div>
-            <div style={{ fontSize:12, color:C.textSub, lineHeight:1.5,
-              background:C.redPale, borderRadius:10, padding:"9px 12px", marginBottom:biz.status?0:10 }}>
-              {biz.desc||"Açıklama yok"}
-            </div>
-            {!biz.status && (
-              <div style={{ display:"flex", gap:8, marginTop:10 }}>
-                <button onClick={()=>approve(biz.id)} style={{ flex:1, border:"none",
-                  borderRadius:10, padding:"10px", fontSize:12, fontWeight:700,
-                  cursor:"pointer", background:"#D1FAE5", color:"#065F46" }}>✅ Onayla</button>
-                <button onClick={()=>reject(biz.id)} style={{ flex:1, border:"none",
-                  borderRadius:10, padding:"10px", fontSize:12, fontWeight:700,
-                  cursor:"pointer", background:"#FEE2E2", color:"#991B1B" }}>❌ Reddet</button>
-              </div>
-            )}
-          </div>
-        ))}
+        )}
       </div>
     </div>
   );
@@ -4921,7 +4949,6 @@ useEffect(() => {
       }
     });
     return () => subscription.unsubscribe();
-  }, []);
   }, []);
   const [notifications, setNotifications] = useState([
     { icon:"✅", title:"Bosphorus Kitchen yorumunuza yanıt verdi", body:"\"Teşekkürler, sizi tekrar görmek isteriz!\"", time:"2 saat önce",   read:false },
