@@ -4906,7 +4906,15 @@ useEffect(() => {
       setMyEvents(evts ? evts.map(e=>({...e, cat:e.category, img:"🎉", attendees:0})) : []);
     };
 
-    // Auth dinleyici - hem açılışta hem değişimlerde çalışır
+    // Açılışta mevcut session'ı kontrol et
+    supabase.auth.getSession().then(async ({ data: { session } }) => {
+      if (session?.user) {
+        setLoggedIn(true);
+        await loadUserData(session.user.id, session.user.email);
+      }
+    });
+
+    // Auth değişikliklerini dinle
     const { data: { subscription } } = supabase.auth.onAuthStateChange(async (event, session) => {
       if (event === "SIGNED_OUT") {
         setLoggedIn(false);
@@ -4917,7 +4925,7 @@ useEffect(() => {
         setTab("home");
         return;
       }
-      if (session?.user) {
+      if (event === "SIGNED_IN" && session?.user) {
         setLoggedIn(true);
         await loadUserData(session.user.id, session.user.email);
       }
