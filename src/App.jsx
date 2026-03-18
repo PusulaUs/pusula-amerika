@@ -1228,16 +1228,83 @@ function Jobs({ onBack, onPost, extraJobs=[] }) {
   );
 }
 
-function Events({ onBack, onPost, dbEvents=[] }) {
+function Events({ onBack, onPost, dbEvents=[], rsvpList=[], onRsvpChange, initialEvent=null, onClearInitial }) {
   const [filter, setFilter] = useState("Tümü");
-  const [rsvp, setRsvp] = useState([]); // katılınan etkinlik id'leri
-  const toggleRsvp = id => setRsvp(p=>p.includes(id)?p.filter(x=>x!==id):[...p,id]);
+  const [rsvp, setRsvp] = useState(rsvpList||[]); // katılınan etkinlik id'leri
+const [selectedEvent, setSelectedEvent] = useState(initialEvent);
+const [photoView, setPhotoView] = useState(null);
+  const toggleRsvp = id => {
+  const newRsvp = rsvp.includes(id) ? rsvp.filter(x=>x!==id) : [...rsvp,id];
+  setRsvp(newRsvp);
+  onRsvpChange && onRsvpChange(newRsvp);
+};
   const catList = ["Tümü","Ulusal Bayram","Kültür & Sanat","Yemek","Networking","Müzik"];
   const allEvents = [...events, ...dbEvents];
   const filtered = filter==="Tümü" ? allEvents : allEvents.filter(e=>e.cat===filter);
+  if (selectedEvent) return (
+    <div style={{ minHeight:"100vh", height:"100vh", display:"flex", flexDirection:"column", background:C.bgSoft, width:"100%" }}>
+      <div style={{ background:`linear-gradient(135deg,${C.red},${C.redDark})`, padding:"20px 20px 32px" }}>
+        <button onClick={()=>setSelectedEvent(null)} style={{ background:"none", border:"none",
+          color:"rgba(255,255,255,0.75)", fontSize:13, fontWeight:700,
+          cursor:"pointer", marginBottom:16, display:"flex", alignItems:"center", gap:6 }}>
+          ← Geri
+        </button>
+        <div style={{ display:"flex", gap:14, alignItems:"center" }}>
+          <div onClick={()=>{ if(selectedEvent.image_url||selectedEvent.imageUrl) setPhotoView(selectedEvent.image_url||selectedEvent.imageUrl); }}
+            style={{ width:64, height:64, borderRadius:18, flexShrink:0,
+            background:"rgba(255,255,255,0.2)", border:"2px solid rgba(255,255,255,0.4)",
+            display:"flex", alignItems:"center", justifyContent:"center", fontSize:32,
+            overflow:"hidden", cursor:(selectedEvent.image_url||selectedEvent.imageUrl)?"zoom-in":"default" }}>
+            {(selectedEvent.image_url||selectedEvent.imageUrl)
+              ? <img src={selectedEvent.image_url||selectedEvent.imageUrl} alt={selectedEvent.title}
+                  style={{ width:"100%", height:"100%", objectFit:"cover" }}/>
+              : selectedEvent.img}
+          </div>
+          <div>
+            <div style={{ fontSize:18, fontWeight:700, color:C.white, lineHeight:1.3 }}>{selectedEvent.title}</div>
+            <div style={{ fontSize:12, color:"rgba(255,255,255,0.75)", marginTop:4 }}>{selectedEvent.org}</div>
+          </div>
+        </div>
+      </div>
+      <div style={{ flex:1, overflowY:"auto", padding:"20px" }}>
+        <div style={{ background:C.white, border:`1px solid ${C.border}`, borderRadius:16, padding:"16px", marginBottom:14 }}>
+          {[
+            { icon:"📅", label:"Tarih", val:selectedEvent.date },
+            { icon:"📍", label:"Konum", val:selectedEvent.location },
+            { icon:"🏢", label:"Organizatör", val:selectedEvent.org },
+            { icon:"👥", label:"Katılımcı", val:`${selectedEvent.attendees} kişi` },
+            { icon:"💰", label:"Ücret", val:selectedEvent.free ? "Ücretsiz" : selectedEvent.price },
+          ].map((row,i,arr)=>(
+            <div key={row.label} style={{ display:"flex", gap:12, padding:"11px 0",
+              borderBottom:i<arr.length-1?`1px solid ${C.border}`:"none", alignItems:"flex-start" }}>
+              <span style={{ fontSize:16 }}>{row.icon}</span>
+              <div>
+                <div style={{ fontSize:10, color:C.textMute, fontWeight:600, marginBottom:2 }}>{row.label}</div>
+                <div style={{ fontSize:13, color:C.text }}>{row.val||"—"}</div>
+              </div>
+            </div>
+          ))}
+        </div>
+        {selectedEvent.description && (
+          <div style={{ background:C.white, border:`1px solid ${C.border}`, borderRadius:16, padding:"16px", marginBottom:14 }}>
+            <div style={{ fontSize:11, fontWeight:700, color:C.textMute, letterSpacing:1.5, textTransform:"uppercase", marginBottom:10 }}>AÇIKLAMA</div>
+            <div style={{ fontSize:13, color:C.text, lineHeight:1.7 }}>{selectedEvent.description}</div>
+          </div>
+        )}
+        <button onClick={()=>{ const id=selectedEvent.id; setRsvp(p=>p.includes(id)?p.filter(x=>x!==id):[...p,id]); }}
+          style={{ width:"100%", border:"none", borderRadius:13, padding:"14px", fontSize:14, fontWeight:700,
+            cursor:"pointer", background:rsvp.includes(selectedEvent.id)
+              ?`linear-gradient(135deg,#28a745,#1e7e34)`
+              :`linear-gradient(135deg,${C.red},${C.redDark})`, color:C.white }}>
+          {rsvp.includes(selectedEvent.id) ? "✓ Katılıyorum" : "Katıl"}
+        </button>
+      </div>
+    </div>
+  );
 
   return (
     <div style={{ height:"100vh", display:"flex", flexDirection:"column", background:C.bgSoft }}>
+      <PhotoModal url={photoView} onClose={()=>setPhotoView(null)}/>
       <div style={{ background:C.white, borderBottom:`1px solid ${C.border}`, padding:"16px 18px 0" }}>
         <button onClick={onBack} style={{ background:"none", border:"none", color:C.red,
           fontSize:13, fontWeight:700, cursor:"pointer",
@@ -1267,19 +1334,24 @@ function Events({ onBack, onPost, dbEvents=[] }) {
       </div>
       <div style={{ flex:1, overflowY:"auto", padding:"16px 18px" }}>
         {filtered.map(ev => (
-          <div key={ev.id} style={{ background:C.white, border:`1px solid ${C.border}`,
+          <div key={ev.id} onClick={()=>setSelectedEvent(ev)} style={{ background:C.white, border:`1px solid ${C.border}`,
             borderRadius:16, overflow:"hidden", marginBottom:12,
-            boxShadow:"0 1px 4px rgba(200,16,46,0.05)" }}>
+            boxShadow:"0 1px 4px rgba(200,16,46,0.05)", cursor:"pointer" }}>
             <div style={{ height:4, background:
               ev.cat==="Ulusal Bayram"
                 ? `linear-gradient(90deg,${C.red},${C.turq})`
                 : `linear-gradient(90deg,${C.red},${C.redMid})` }}/>
             <div style={{ padding:"14px 16px" }}>
               <div style={{ display:"flex", gap:12, alignItems:"flex-start" }}>
-                <div style={{ width:52, height:52, borderRadius:14, flexShrink:0,
+                <div onClick={e=>{ e.stopPropagation(); if(ev.image_url||ev.imageUrl) setPhotoView(ev.image_url||ev.imageUrl); }}
+                  style={{ width:52, height:52, borderRadius:14, flexShrink:0,
                   background:C.redPale, border:`1px solid ${C.border}`,
-                  display:"flex", alignItems:"center", justifyContent:"center", fontSize:24 }}>
-                  {ev.img}
+                  display:"flex", alignItems:"center", justifyContent:"center", fontSize:24,
+                  overflow:"hidden", cursor:(ev.image_url||ev.imageUrl)?"zoom-in":"default" }}>
+                  {(ev.image_url||ev.imageUrl)
+                    ? <img src={ev.image_url||ev.imageUrl} alt={ev.title}
+                        style={{ width:"100%", height:"100%", objectFit:"cover" }}/>
+                    : ev.img}
                 </div>
                 <div style={{ flex:1 }}>
                   <div style={{ fontSize:14, fontWeight:700, color:C.text, marginBottom:4, lineHeight:1.3 }}>{ev.title}</div>
@@ -1345,9 +1417,8 @@ function RegisterBusiness({ onBack, onSuccess }) {
   const [form, setForm] = useState({
     name:"", category:"", description:"",
     address:"", city:"", state:"", zip:"",
-    phone:"", website:"",
+    phone:"", website:"", image:null, gallery:[],
     hours: DAYS.map(d=>({ day:d, open:true, from:"09:00", to:"18:00" })),
-   
   });
   const [submitted, setSubmitted] = useState(false);
 
@@ -1433,6 +1504,31 @@ function RegisterBusiness({ onBack, onSuccess }) {
         {/* ── Adım 0: Temel Bilgiler ── */}
         {step===0 && (
           <>
+            {/* İşletme profil fotoğrafı */}
+            <div style={{ textAlign:"center", marginBottom:20 }}>
+              <label style={{ cursor:"pointer", display:"inline-block", position:"relative" }}>
+                <div style={{ width:90, height:90, borderRadius:"50%", margin:"0 auto",
+                  background:C.redPale, border:`2px dashed ${C.border}`,
+                  display:"flex", alignItems:"center", justifyContent:"center",
+                  overflow:"hidden", fontSize:40 }}>
+                  {form.image
+                    ? <img src={URL.createObjectURL(form.image)} alt="profil"
+                        style={{ width:"100%", height:"100%", objectFit:"cover" }}/>
+                    : (categories.find(c=>c.id===form.category)?.icon || "🏢")}
+                </div>
+                <div style={{ position:"absolute", bottom:0, right:0,
+                  width:28, height:28, borderRadius:"50%",
+                  background:`linear-gradient(135deg,${C.red},${C.redDark})`,
+                  display:"flex", alignItems:"center", justifyContent:"center",
+                  fontSize:14, color:"white" }}>📷</div>
+                <input type="file" accept="image/*" style={{ display:"none" }}
+                  onChange={e=>{ if(e.target.files[0]) set("image", e.target.files[0]); }}/>
+              </label>
+              <div style={{ fontSize:11, color:C.textMute, marginTop:8 }}>
+                {form.image ? "Fotoğraf seçildi ✓" : "Profil fotoğrafı ekle"}
+              </div>
+            </div>
+
             <Field label="İşletme / Meslek Adı" value={form.name}
               onChange={v=>set("name",v)} placeholder="örn. Bosphorus Kitchen, Av. Ali Yılmaz"
               required/>
@@ -1572,6 +1668,40 @@ function RegisterBusiness({ onBack, onSuccess }) {
               </div>
             </div>
 
+             {/* Galeri Fotoğrafları */}
+            <div style={{ marginBottom:14 }}>
+              <div style={{ fontSize:11, fontWeight:700, color:C.textSub,
+                letterSpacing:0.5, marginBottom:6 }}>Galeri Fotoğrafları</div>
+              <div style={{ display:"flex", flexWrap:"wrap", gap:8, marginBottom:8 }}>
+                {form.gallery.map((img,i)=>(
+                  <div key={i} style={{ position:"relative", width:80, height:80 }}>
+                    <img src={URL.createObjectURL(img)} alt=""
+                      style={{ width:80, height:80, borderRadius:10, objectFit:"cover",
+                        border:`1px solid ${C.border}` }}/>
+                    <div onClick={()=>set("gallery", form.gallery.filter((_,j)=>j!==i))}
+                      style={{ position:"absolute", top:2, right:2,
+                        background:"rgba(0,0,0,0.6)", borderRadius:"50%",
+                        width:20, height:20, display:"flex", alignItems:"center",
+                        justifyContent:"center", cursor:"pointer", color:"white", fontSize:11 }}>✕</div>
+                  </div>
+                ))}
+                {form.gallery.length < 6 && (
+                  <label style={{ width:80, height:80, borderRadius:10,
+                    border:`2px dashed ${C.border}`, background:C.redPale,
+                    display:"flex", flexDirection:"column", alignItems:"center",
+                    justifyContent:"center", cursor:"pointer", gap:4 }}>
+                    <span style={{ fontSize:24 }}>📷</span>
+                    <span style={{ fontSize:9, color:C.textMute }}>Ekle</span>
+                    <input type="file" accept="image/*" multiple style={{ display:"none" }}
+                      onChange={e=>{
+                        const files = Array.from(e.target.files);
+                        set("gallery", [...form.gallery, ...files].slice(0,6));
+                      }}/>
+                  </label>
+                )}
+              </div>
+              <div style={{ fontSize:10, color:C.textMute }}>Max 6 fotoğraf</div>
+            </div>
             
              {/* Etiketler */}
             <Field label="Etiketler (virgülle ayırın)" value={form.tags}
@@ -1633,19 +1763,40 @@ function RegisterBusiness({ onBack, onSuccess }) {
           ) : (
             <button onClick={async ()=>{
   const { data: { user } } = await supabase.auth.getUser();
+  
+  let imageUrl = null;
+  if (form.image) {
+    const ext = form.image.name.split('.').pop();
+    const fileName = `${Date.now()}.${ext}`;
+    const { data: uploadData, error: uploadError } = await supabase.storage
+      .from('events')
+      .upload(fileName, form.image, { contentType: form.image.type });
+    console.log("Upload data:", uploadData, "Error:", uploadError);
+    if (uploadData) {
+      const { data: urlData } = supabase.storage
+        .from('events')
+        .getPublicUrl(fileName);
+      imageUrl = urlData.publicUrl;
+      console.log("Image URL:", imageUrl);
+    }
+  }
+
   await supabase.from("events").insert({
     title: form.title,
     org: form.org,
     date: form.date,
     location: form.location,
     state: form.state,
+    zip: form.zip,
     category: form.cat,
     description: form.description,
     free: form.free,
     price: form.price,
+    image_url: imageUrl,
     owner_id: user?.id || null,
   });
   setSubmitted(true);
+  onSuccess && onSuccess({...form, imageUrl, image_url: imageUrl});
 }} style={{ flex:2, border:"none",
               borderRadius:13, padding:"14px", fontSize:14, fontWeight:700, cursor:"pointer",
               background:`linear-gradient(135deg,${C.red},${C.redDark})`, color:C.white }}>
@@ -1797,11 +1948,11 @@ function ContactPage() {
     </div>
   );
 }
-function ProfilePage({ userProfile, onEdit, favorites, onBusiness, loggedIn, onLogin, myBusiness, onMyBusiness, onRegisterBiz, lang, onLangChange, onAdmin, onLogout, dbBusinesses=[], reviews=[] }) {
+function ProfilePage({ userProfile, onEdit, favorites, onBusiness, loggedIn, onLogin, myBusiness, onMyBusiness, onRegisterBiz, lang, onLangChange, onAdmin, onLogout, dbBusinesses=[], reviews=[], myEvents=[], rsvpEvents=[], dbEvents=[], onGoEvents }) {
  const favList = [...businesses, ...(dbBusinesses||[])].filter(b => favorites.includes(b.id));
-  const [tab, setTab] = useState("info"); // info | favs
+const [tab, setTab] = useState("info"); // info | favs | events
   // Giriş yapılmamışsa login kartı göster
-  if (!loggedIn) return (
+  if (!loggedIn) return (     
     <div style={{ height:"100vh", display:"flex", flexDirection:"column",
       background:C.bgSoft, alignItems:"center", justifyContent:"center", padding:32 }}>
       <div style={{ width:80, height:80, borderRadius:22, margin:"0 auto 20px",
@@ -1879,7 +2030,7 @@ function ProfilePage({ userProfile, onEdit, favorites, onBusiness, loggedIn, onL
       {/* Tab bar */}
       <div style={{ background:C.white, display:"flex",
         borderBottom:`1px solid ${C.border}` }}>
-        {[{id:"info",label:"Bilgiler"},{id:"favs",label:`Favoriler (${favList.length})`}].map(t=>(
+        {[{id:"info",label:"Bilgiler"},{id:"favs",label:`Favoriler (${favList.length})`},{id:"events",label:"Etkinliklerim"}].map(t=>(
           <div key={t.id} onClick={()=>setTab(t.id)} style={{ flex:1, padding:"12px",
             textAlign:"center", fontSize:12, fontWeight:700, cursor:"pointer",
             color: tab===t.id ? C.red : C.textMute,
@@ -2050,12 +2201,77 @@ function ProfilePage({ userProfile, onEdit, favorites, onBusiness, loggedIn, onL
             </div>
           ))
         )}
+       {/* Etkinliklerim */}
+        {tab==="events" && (
+          <div>
+            {myEvents.length > 0 && (
+              <>
+                <div style={{ fontSize:10, fontWeight:700, color:C.textMute,
+                  letterSpacing:1.5, textTransform:"uppercase", marginBottom:12 }}>
+                  ETKİNLİKLERİM ({myEvents.length})
+                </div>
+                {myEvents.map((ev,i)=>(
+                  <div key={i} onClick={()=>onGoEvents&&onGoEvents(ev)} style={{ background:C.white, border:`1px solid ${C.border}`,
+                    borderRadius:16, padding:"14px 16px", marginBottom:10, cursor:"pointer" }}>
+                    <div style={{ display:"flex", gap:12, alignItems:"center" }}>
+                      <div style={{ width:46, height:46, borderRadius:12, flexShrink:0,
+                        background:C.redPale, border:`1px solid ${C.border}`,
+                        display:"flex", alignItems:"center", justifyContent:"center", fontSize:22 }}>
+                        {ev.img||"🎉"}
+                      </div>
+                      <div style={{ flex:1 }}>
+                        <div style={{ fontSize:13, fontWeight:700, color:C.text, marginBottom:2 }}>{ev.title}</div>
+                        <div style={{ fontSize:11, color:C.textMute, marginBottom:2 }}>📅 {ev.date}</div>
+                        <div style={{ fontSize:11, color:C.textMute }}>📍 {ev.location}</div>
+                      </div>
+                      <span style={{ background:"#D1FAE5", color:"#065F46",
+                        borderRadius:8, padding:"3px 8px", fontSize:10, fontWeight:700 }}>
+                        Aktif
+                      </span>
+                    </div>
+                  </div>
+                ))}
+                <div style={{ height:16 }}/>
+              </>
+            )}
+            <div style={{ fontSize:10, fontWeight:700, color:C.textMute,
+              letterSpacing:1.5, textTransform:"uppercase", marginBottom:12 }}>
+              KATILACAĞIM ETKİNLİKLER ({rsvpEvents.length})
+            </div>
+            {rsvpEvents.length===0 ? (
+              <div style={{ textAlign:"center", paddingTop:20 }}>
+                <div style={{ fontSize:40, marginBottom:12 }}>🎉</div>
+                <div style={{ fontSize:14, color:C.textSub, marginBottom:8 }}>Henüz katılım yok</div>
+                <div style={{ fontSize:12, color:C.textMute }}>Etkinlikler sayfasından "Katıl" butonuna tıklayın</div>
+              </div>
+            ) : dbEvents.filter(ev=>rsvpEvents.includes(ev.id)).map((ev,i)=>(
+              <div key={i} onClick={()=>onGoEvents&&onGoEvents(ev)} style={{ background:C.white, border:`1px solid ${C.border}`,
+                borderRadius:16, padding:"14px 16px", marginBottom:10, cursor:"pointer" }}>
+                <div style={{ display:"flex", gap:12, alignItems:"center" }}>
+                  <div style={{ width:46, height:46, borderRadius:12, flexShrink:0,
+                    background:C.redPale, border:`1px solid ${C.border}`,
+                    display:"flex", alignItems:"center", justifyContent:"center", fontSize:22 }}>
+                    {ev.img||"🎉"}
+                  </div>
+                  <div style={{ flex:1 }}>
+                    <div style={{ fontSize:13, fontWeight:700, color:C.text, marginBottom:2 }}>{ev.title}</div>
+                    <div style={{ fontSize:11, color:C.textMute, marginBottom:2 }}>📅 {ev.date}</div>
+                    <div style={{ fontSize:11, color:C.textMute }}>📍 {ev.location}</div>
+                  </div>
+                  <span style={{ background:C.redLight, color:C.red,
+                    borderRadius:8, padding:"3px 8px", fontSize:10, fontWeight:700 }}>
+                    Katılıyorum
+                  </span>
+                </div>
+              </div>
+            ))}
+          </div>
+        )}
         <div style={{ height:16 }}/>
       </div>
     </div>
   );
 }
-
 function EditProfile({ profile, onSave, onBack }) {
   const [form, setForm] = useState({ ...profile });
   const set = (k,v) => setForm(f=>({...f,[k]:v}));
@@ -2183,6 +2399,7 @@ function EditProfile({ profile, onSave, onBack }) {
 
 function BusinessDetail({ business, onBack, favorites, toggleFav, reviews, onAddReview, onReport, onReportReview, onViewUser, lang, isOwner, onBusiness }) {
   const [activeTab, setActiveTab] = useState("info");
+  const [photoView, setPhotoView] = useState(null);
   const [showReviewForm, setShowReviewForm] = useState(false);
   const [starHover, setStarHover] = useState(0);
   const [newReview, setNewReview] = useState({ stars:0, text:"" });
@@ -2212,6 +2429,7 @@ function BusinessDetail({ business, onBack, favorites, toggleFav, reviews, onAdd
 
   return (
     <div style={{ height:"100vh", display:"flex", flexDirection:"column", background:C.bgSoft }}>
+      <PhotoModal url={photoView} onClose={()=>setPhotoView(null)}/>
 
       {/* Header */}
       <div style={{ background:C.white, borderBottom:`1px solid ${C.border}`, padding:"14px 18px" }}>
@@ -2240,11 +2458,12 @@ function BusinessDetail({ business, onBack, favorites, toggleFav, reviews, onAdd
         <div style={{ background:C.white, padding:"0 0 0", borderBottom:`1px solid ${C.border}` }}>
 
           {/* Fotoğraf Galerisi */}
-          {business.gallery && business.gallery.length>0 && (
+          {(business.gallery_urls?.length > 0 || business.gallery?.length > 0) && (
             <div style={{ padding:"0 0 0", overflowX:"auto", display:"flex",
               borderBottom:`1px solid ${C.border}` }}>
-              {business.gallery.map((g,i)=>(
-                <div key={i} style={{ flexShrink:0,
+              {(business.gallery_urls || business.gallery).map((g,i)=>(
+                <div key={i} onClick={()=>setPhotoView(typeof g === 'string' ? g : null)}
+                  style={{ flexShrink:0,
                   width: i===0 ? 220 : 130,
                   height: i===0 ? 160 : 130,
                   background: i%2===0
@@ -2253,8 +2472,10 @@ function BusinessDetail({ business, onBack, favorites, toggleFav, reviews, onAdd
                   borderRight:`1px solid ${C.border}`,
                   display:"flex", alignItems:"center", justifyContent:"center",
                   fontSize: i===0 ? 56 : 40,
-                  cursor:"pointer", position:"relative" }}>
-                  {g}
+                  cursor:"pointer", position:"relative", overflow:"hidden" }}>
+                  {typeof g === 'string' && g.startsWith('http')
+                    ? <img src={g} alt="" style={{ width:"100%", height:"100%", objectFit:"cover" }}/>
+                    : g}
                   {i===0 && business.onaylı && (
                     <div style={{ position:"absolute", top:10, left:10,
                       background:"linear-gradient(135deg,#F59E0B,#D97706)",
@@ -2268,11 +2489,16 @@ function BusinessDetail({ business, onBack, favorites, toggleFav, reviews, onAdd
 
           <div style={{ padding:"16px 18px 0" }}>
           <div style={{ display:"flex", gap:14, alignItems:"flex-start", marginBottom:12 }}>
-            <div style={{ width:56, height:56, borderRadius:14, flexShrink:0,
+            <div onClick={()=>{ if(business.image_url) setPhotoView(business.image_url); }}
+              style={{ width:56, height:56, borderRadius:14, flexShrink:0,
               background:`linear-gradient(135deg,${C.redPale},#FFF5F6)`,
               border:`1px solid ${C.border}`,
-              display:"flex", alignItems:"center", justifyContent:"center", fontSize:26 }}>
-              {business.img}
+              display:"flex", alignItems:"center", justifyContent:"center", fontSize:26,
+              overflow:"hidden", cursor:business.image_url?"zoom-in":"default" }}>
+              {business.image_url
+                ? <img src={business.image_url} alt={business.name}
+                    style={{ width:"100%", height:"100%", objectFit:"cover" }}/>
+                : business.img}
             </div>
               <div style={{ flex:1 }}>
               <div style={{ fontSize:17, fontWeight:700, color:C.text, marginBottom:3,
@@ -2589,7 +2815,7 @@ function BusinessDetail({ business, onBack, favorites, toggleFav, reviews, onAdd
         {/* Galeri */}
         {activeTab==="gallery" && (
           <div style={{ padding:"16px 18px" }}>
-            {(!business.gallery || business.gallery.length===0) ? (
+            {(!(business.gallery_urls?.length > 0) && !(business.gallery?.length > 0)) ? (
               <div style={{ textAlign:"center", padding:"40px 0" }}>
                 <div style={{ fontSize:40, marginBottom:12 }}>📷</div>
                 <div style={{ fontSize:14, color:C.textMute }}>Henüz fotoğraf yok</div>
@@ -2598,11 +2824,12 @@ function BusinessDetail({ business, onBack, favorites, toggleFav, reviews, onAdd
               <>
                 <div style={{ fontSize:10, fontWeight:700, color:C.textMute,
                   letterSpacing:1.5, textTransform:"uppercase", marginBottom:12 }}>
-                  FOTOĞRAFLAR ({business.gallery.length})
+                  FOTOĞRAFLAR ({(business.gallery_urls||business.gallery).length})
                 </div>
                 <div style={{ display:"grid", gridTemplateColumns:"1fr 1fr", gap:10 }}>
-                  {business.gallery.map((g,i)=>(
-                    <div key={i} style={{
+                  {(business.gallery_urls||business.gallery).map((g,i)=>(
+                    <div key={i} onClick={()=>{ if(typeof g==='string'&&g.startsWith('http')) setPhotoView(g); }}
+                      style={{
                       gridColumn: i===0 ? "span 2" : "span 1",
                       height: i===0 ? 180 : 120,
                       borderRadius:16, overflow:"hidden",
@@ -2615,7 +2842,9 @@ function BusinessDetail({ business, onBack, favorites, toggleFav, reviews, onAdd
                       display:"flex", alignItems:"center", justifyContent:"center",
                       fontSize: i===0 ? 60 : 44, cursor:"pointer",
                       position:"relative" }}>
-                      {g}
+                      {typeof g==='string'&&g.startsWith('http')
+                        ? <img src={g} alt="" style={{ width:"100%", height:"100%", objectFit:"cover" }}/>
+                        : g}
                       {i===0 && (
                         <div style={{ position:"absolute", bottom:10, right:10,
                           background:"rgba(0,0,0,0.4)", borderRadius:8,
@@ -2844,6 +3073,8 @@ function AuthScreen({ onAuth, onBack }) {
   const [mode, setMode]   = useState("login"); // login | signup
   const [form, setForm]   = useState({ name:"", email:"", password:"", state:"" });
   const [error, setError] = useState("");
+  const [showTerms,   setShowTerms]   = useState(false);
+const [showPrivacy, setShowPrivacy] = useState(false);
   const set = (k,v) => setForm(f=>({...f,[k]:v}));
 
   const handleSubmit = async () => {
@@ -2891,6 +3122,146 @@ function AuthScreen({ onAuth, onBack }) {
       });
     }
   };
+
+  if (showTerms) return (
+    <div style={{ position:"fixed", top:0, left:0, right:0, bottom:0,
+      background:"rgba(0,0,0,0.5)", zIndex:300,
+      display:"flex", alignItems:"flex-end", justifyContent:"center" }}
+      onClick={()=>setShowTerms(false)}>
+      <div onClick={e=>e.stopPropagation()}
+        style={{ background:C.white, borderRadius:"20px 20px 0 0",
+          width:"100%", maxWidth:430, maxHeight:"90vh",
+          display:"flex", flexDirection:"column" }}>
+        <div style={{ width:36, height:4, borderRadius:2, background:C.border, margin:"14px auto 0" }}/>
+        <div style={{ padding:"16px 20px", borderBottom:`1px solid ${C.border}`,
+          display:"flex", justifyContent:"space-between", alignItems:"center" }}>
+          <div style={{ fontSize:16, fontWeight:700, color:C.text }}>Kullanım Şartları</div>
+          <div onClick={()=>setShowTerms(false)} style={{ fontSize:20, color:C.textMute, cursor:"pointer" }}>✕</div>
+        </div>
+        <div style={{ flex:1, overflowY:"auto", padding:"20px" }}>
+          {[
+            { title:"1. Hizmet Kapsamı", text:"Pusula Amerika, Amerika'daki Türk topluluğuna yönelik bir işletme rehberi, iş ilanları ve etkinlik platformudur. Platform yalnızca bilgi amaçlıdır. Pusula Amerika, listelenen işletmelerin hizmet kalitesini garanti etmez." },
+            { title:"2. Kullanıcı Sorumlulukları", text:"Kullanıcılar platforma ekledikleri bilgilerin doğruluğundan sorumludur. Yanlış, yanıltıcı, hakaret içeren veya zararlı içerik paylaşmak kesinlikle yasaktır. İhlal durumunda hesap askıya alınabilir veya kalıcı olarak silinebilir." },
+            { title:"3. Yaş Sınırı (COPPA)", text:"Platform yalnızca 13 yaş ve üzeri kullanıcılara yöneliktir. 13 yaşın altındaki bireylerden bilerek veri toplanmamaktadır. Ebeveynler, çocuklarının hesap açtığını fark ederlerse pusulaamerika@gmail.com adresine bildirebilir." },
+            { title:"4. İşletme Listelemeleri", text:"İşletme bilgileri admin onayına tabidir. Pusula Amerika, uygunsuz, yanlış veya yanıltıcı içerikleri önceden haber vermeksizin kaldırma hakkını saklı tutar. Onay süreci 24-48 saat içinde tamamlanır." },
+            { title:"5. Ödeme ve İade Şartları", text:"Premium üyelik ve öne çıkarma hizmetleri için alınan ödemeler Stripe altyapısı üzerinden işlenir. Satın alımlar dijital hizmet niteliğinde olduğundan iade yapılmamaktadır. Ancak teknik hata kaynaklı çifte ödeme durumlarında 7 iş günü içinde iade sağlanır. Abonelikler bir sonraki fatura döneminden önce iptal edilebilir." },
+            { title:"6. DMCA İçerik Kaldırma", text:"Telif hakkınızı ihlal ettiğini düşündüğünüz içerikler için pusulaamerika@gmail.com adresine DMCA kaldırma talebi gönderebilirsiniz. Talebinizde içeriğin URL'si, hak sahibi bilgileriniz ve imzalı beyanınız yer almalıdır. Geçerli talepler 5 iş günü içinde işleme alınır." },
+            { title:"7. Fikri Mülkiyet", text:"Platformdaki tüm içerikler, görseller, logolar ve marka unsurları Pusula Amerika'ya aittir. Kullanıcıların paylaştığı içerikler için platform, dünya genelinde ücretsiz, devredilebilir bir lisans hakkı edinir. Bu hak, içerik silindiğinde sona erer." },
+            { title:"8. Sorumluluk Reddi", text:"Pusula Amerika, üçüncü taraf işletmelerin hizmetlerinden, web sitelerinden veya ürünlerinden doğan zararlardan sorumlu değildir. Platform maksimum sorumluluk tutarı, kullanıcının son 12 ayda ödediği toplam tutar ile sınırlıdır." },
+            { title:"9. Yargı Yetkisi", text:"Bu kullanım şartları Virginia Eyaleti kanunlarına tabidir. Herhangi bir anlaşmazlık durumunda Virginia federal veya eyalet mahkemeleri yetkilidir. Kullanıcılar bu yargı yetkisini kabul etmiş sayılır." },
+            { title:"10. Değişiklikler", text:"Kullanım şartları önceden haber verilmeksizin güncellenebilir. Güncel şartlar her zaman uygulama üzerinden erişilebilir olacaktır. Platforma erişmeye devam etmek, güncel şartları kabul etmek anlamına gelir." },
+          ].map((s,i)=>(
+            <div key={i} style={{ marginBottom:20 }}>
+              <div style={{ fontSize:13, fontWeight:700, color:C.text, marginBottom:6 }}>{s.title}</div>
+              <div style={{ fontSize:12, color:C.textSub, lineHeight:1.8 }}>{s.text}</div>
+            </div>
+          ))}
+          <div style={{ fontSize:11, color:C.textMute, marginTop:8, paddingTop:12, borderTop:`1px solid ${C.border}` }}>
+            Son güncelleme: Mart 2026 · İletişim: pusulaamerika@gmail.com · Virginia, ABD
+          </div>
+        </div>
+        <div style={{ padding:"12px 20px 32px", borderTop:`1px solid ${C.border}` }}>
+          <button onClick={()=>setShowTerms(false)} style={{ width:"100%", border:"none",
+            borderRadius:13, padding:"13px", fontSize:14, fontWeight:700,
+            cursor:"pointer", background:`linear-gradient(135deg,${C.red},${C.redDark})`, color:C.white }}>
+            Anladım ✓
+          </button>
+        </div>
+      </div>
+    </div>
+  );
+
+  if (showPrivacy) return (
+    <div style={{ position:"fixed", top:0, left:0, right:0, bottom:0,
+      background:"rgba(0,0,0,0.5)", zIndex:300,
+      display:"flex", alignItems:"flex-end", justifyContent:"center" }}
+      onClick={()=>setShowPrivacy(false)}>
+      <div onClick={e=>e.stopPropagation()}
+        style={{ background:C.white, borderRadius:"20px 20px 0 0",
+          width:"100%", maxWidth:430, maxHeight:"90vh",
+          display:"flex", flexDirection:"column" }}>
+        <div style={{ width:36, height:4, borderRadius:2, background:C.border, margin:"14px auto 0" }}/>
+        <div style={{ padding:"16px 20px", borderBottom:`1px solid ${C.border}`,
+          display:"flex", justifyContent:"space-between", alignItems:"center" }}>
+          <div style={{ fontSize:16, fontWeight:700, color:C.text }}>Gizlilik Politikası</div>
+          <div onClick={()=>setShowPrivacy(false)} style={{ fontSize:20, color:C.textMute, cursor:"pointer" }}>✕</div>
+        </div>
+        <div style={{ flex:1, overflowY:"auto", padding:"20px" }}>
+          {[
+            { title:"1. Toplanan Bilgiler", text:"Hesap oluştururken ad, e-posta adresi ve eyalet/şehir bilgisi toplanır. İşletme sahipleri ek olarak işletme adı, adres, telefon ve açıklama bilgisi sağlar. Ödeme işlemlerinde kart bilgileri yalnızca Stripe tarafından işlenir; Pusula Amerika ödeme bilgilerini saklamaz." },
+            { title:"2. Bilgilerin Kullanımı", text:"Toplanan bilgiler; hesap yönetimi, işletme listeleme, iş ilanları, etkinlik duyuruları ve platform iyileştirme amacıyla kullanılır. Kişisel bilgileriniz üçüncü taraflara satılmaz veya kiralanmaz. Yalnızca yasal zorunluluk halinde yetkili makamlarla paylaşılabilir." },
+            { title:"3. Çerez Politikası", text:"Platform, oturum yönetimi için zorunlu çerezler kullanır. Analitik amaçlı anonim kullanım verileri toplanabilir. Reklam amaçlı üçüncü taraf çerezi kullanılmamaktadır. Tarayıcı ayarlarınızdan çerezleri devre dışı bırakabilirsiniz; ancak bu durumda bazı özellikler çalışmayabilir." },
+            { title:"4. Veri Güvenliği", text:"Tüm veriler Supabase altyapısında AES-256 şifreleme ile saklanır. SSL/TLS protokolü ile veri transferi şifrelenir. Şüpheli erişim durumunda kullanıcılar e-posta ile bilgilendirilir. Veri ihlali durumunda Virginia Veri İhlali Bildirimi Kanunu gereği yetkili makamlar ve etkilenen kullanıcılar bilgilendirilir." },
+            { title:"5. Veri Saklama Süresi", text:"Aktif hesaplar için veriler hesap silinene kadar saklanır. Silinen hesaplara ait veriler 30 gün içinde sistemden kalıcı olarak kaldırılır. Yasal yükümlülükler kapsamındaki kayıtlar kanunun öngördüğü süre boyunca saklanabilir." },
+            { title:"6. Kullanıcı Hakları", text:"Hesabınızı ve tüm verilerinizi istediğiniz zaman silebilirsiniz. Verilerinizin bir kopyasını talep edebilirsiniz. Yanlış bilgilerin düzeltilmesini isteyebilirsiniz. Tüm talepler için pusulaamerika@gmail.com adresine yazabilirsiniz. Talepler 30 gün içinde yanıtlanır." },
+            { title:"7. CCPA (Kaliforniya) Hakları", text:"Kaliforniya sakinleri; kişisel verilerinin ne şekilde kullanıldığını öğrenme, silinmesini talep etme ve satışına itiraz etme haklarına sahiptir. Pusula Amerika kişisel veri satmamaktadır. CCPA talepleri için pusulaamerika@gmail.com adresine ulaşabilirsiniz." },
+            { title:"8. GDPR (AB) Hakları", text:"Avrupa Birliği sakinleri; verilere erişim, düzeltme, silme, işlemeyi kısıtlama ve taşınabilirlik haklarına sahiptir. Veri işlemenin yasal dayanağı açık rıza ve meşru menfaattir. Şikayetler için ilgili ülkenin veri koruma otoritesine başvurulabilir." },
+            { title:"9. Çocukların Gizliliği", text:"13 yaşın altındaki bireylerden bilerek veri toplanmamaktadır. Bir çocuğun hesap açtığını fark ederseniz pusulaamerika@gmail.com adresine bildirin; hesap ve ilgili veriler derhal silinecektir." },
+            { title:"10. Yargı Yetkisi ve Geçerli Hukuk", text:"Bu gizlilik politikası Virginia Eyaleti kanunlarına ve federal ABD gizlilik yasalarına tabidir. Anlaşmazlıklarda Virginia mahkemeleri yetkilidir." },
+          ].map((s,i)=>(
+            <div key={i} style={{ marginBottom:20 }}>
+              <div style={{ fontSize:13, fontWeight:700, color:C.text, marginBottom:6 }}>{s.title}</div>
+              <div style={{ fontSize:12, color:C.textSub, lineHeight:1.8 }}>{s.text}</div>
+            </div>
+          ))}
+          <div style={{ fontSize:11, color:C.textMute, marginTop:8, paddingTop:12, borderTop:`1px solid ${C.border}` }}>
+            Son güncelleme: Mart 2026 · İletişim: pusulaamerika@gmail.com · Virginia, ABD
+          </div>
+        </div>
+        <div style={{ padding:"12px 20px 32px", borderTop:`1px solid ${C.border}` }}>
+          <button onClick={()=>setShowPrivacy(false)} style={{ width:"100%", border:"none",
+            borderRadius:13, padding:"13px", fontSize:14, fontWeight:700,
+            cursor:"pointer", background:`linear-gradient(135deg,${C.red},${C.redDark})`, color:C.white }}>
+            Anladım ✓
+          </button>
+        </div>
+      </div>
+    </div>
+  );
+
+  if (showPrivacy) return (
+    <div style={{ position:"fixed", top:0, left:0, right:0, bottom:0,
+      background:"rgba(0,0,0,0.5)", zIndex:300,
+      display:"flex", alignItems:"flex-end", justifyContent:"center" }}
+      onClick={()=>setShowPrivacy(false)}>
+      <div onClick={e=>e.stopPropagation()}
+        style={{ background:C.white, borderRadius:"20px 20px 0 0",
+          width:"100%", maxWidth:430, maxHeight:"85vh",
+          display:"flex", flexDirection:"column" }}>
+        <div style={{ width:36, height:4, borderRadius:2, background:C.border, margin:"14px auto 0" }}/>
+        <div style={{ padding:"16px 20px", borderBottom:`1px solid ${C.border}`,
+          display:"flex", justifyContent:"space-between", alignItems:"center" }}>
+          <div style={{ fontSize:16, fontWeight:700, color:C.text }}>Gizlilik Politikası</div>
+          <div onClick={()=>setShowPrivacy(false)} style={{ fontSize:20, color:C.textMute, cursor:"pointer" }}>✕</div>
+        </div>
+        <div style={{ flex:1, overflowY:"auto", padding:"20px" }}>
+          {[
+            { title:"1. Toplanan Bilgiler", text:"Ad, e-posta adresi, konum (eyalet/şehir) ve işletme bilgileri toplanmaktadır. Ödeme bilgileri Pusula Amerika tarafından saklanmaz." },
+            { title:"2. Bilgilerin Kullanımı", text:"Toplanan bilgiler; hesap yönetimi, işletme listeleme, iş ilanları ve platform iyileştirme amacıyla kullanılır. Üçüncü taraflarla satılmaz." },
+            { title:"3. Veri Güvenliği", text:"Tüm veriler Supabase altyapısında şifreli olarak saklanır. SSL/TLS şifreleme kullanılmaktadır." },
+            { title:"4. Çerezler", text:"Platform, kullanıcı deneyimini iyileştirmek için oturum çerezleri kullanır. Üçüncü taraf reklam çerezi kullanılmamaktadır." },
+            { title:"5. Kullanıcı Hakları", text:"Hesabınızı ve verilerinizi istediğiniz zaman silebilirsiniz. Veri talepleriniz için pusulaamerika@gmail.com adresine ulaşabilirsiniz." },
+            { title:"6. CCPA & GDPR", text:"Kaliforniya ve AB kullanıcıları, kişisel verilerinin silinmesini ve aktarılmamasını talep etme hakkına sahiptir." },
+          ].map((s,i)=>(
+            <div key={i} style={{ marginBottom:18 }}>
+              <div style={{ fontSize:13, fontWeight:700, color:C.text, marginBottom:6 }}>{s.title}</div>
+              <div style={{ fontSize:12, color:C.textSub, lineHeight:1.7 }}>{s.text}</div>
+            </div>
+          ))}
+          <div style={{ fontSize:11, color:C.textMute, marginTop:8 }}>
+            Son güncelleme: Mart 2026 · pusulaamerika@gmail.com
+          </div>
+        </div>
+        <div style={{ padding:"12px 20px 32px", borderTop:`1px solid ${C.border}` }}>
+          <button onClick={()=>setShowPrivacy(false)} style={{ width:"100%", border:"none",
+            borderRadius:13, padding:"13px", fontSize:14, fontWeight:700,
+            cursor:"pointer", background:`linear-gradient(135deg,${C.red},${C.redDark})`, color:C.white }}>
+            Anladım ✓
+          </button>
+        </div>
+      </div>
+    </div>
+  );
 
   return (
     <div style={{ height:"100vh", display:"flex", flexDirection:"column", background:C.white }}>
@@ -3016,9 +3387,9 @@ function AuthScreen({ onAuth, onBack }) {
         {mode==="signup" && (
           <div style={{ fontSize:10, color:C.textMute, textAlign:"center", marginBottom:10, lineHeight:1.6 }}>
             Kayıt olarak{" "}
-            <span style={{ color:C.red, cursor:"pointer", textDecoration:"underline" }}>Kullanım Şartları</span>
+            <span onClick={()=>setShowTerms(true)} style={{ color:C.red, cursor:"pointer", textDecoration:"underline" }}>Kullanım Şartları</span>
             {" "}ve{" "}
-            <span style={{ color:C.red, cursor:"pointer", textDecoration:"underline" }}>Gizlilik Politikası</span>
+            <span onClick={()=>setShowPrivacy(true)} style={{ color:C.red, cursor:"pointer", textDecoration:"underline" }}>Gizlilik Politikası</span>
             'nı kabul etmiş sayılırsınız.
           </div>
         )}
@@ -3186,19 +3557,40 @@ function PostJob({ onBack, onSuccess, userName }) {
         borderTop:`1px solid ${C.border}` }}>
         <button onClick={async()=>{ if(!canSubmit) return;
   const { data: { user } } = await supabase.auth.getUser();
+  
+  let imageUrl = null;
+  if (form.image) {
+    const ext = form.image.name.split('.').pop();
+    const fileName = `${Date.now()}.${ext}`;
+    const { data: uploadData, error: uploadError } = await supabase.storage
+      .from('events')
+      .upload(fileName, form.image, { contentType: form.image.type });
+    console.log("Upload data:", uploadData, "Error:", uploadError);
+    if (uploadData) {
+      const { data: urlData } = supabase.storage
+        .from('events')
+        .getPublicUrl(fileName);
+      imageUrl = urlData.publicUrl;
+      console.log("Image URL:", imageUrl);
+    }
+  }
+
   await supabase.from("events").insert({
     title: form.title,
     org: form.org,
     date: form.date,
     location: form.location,
     state: form.state,
+    zip: form.zip,
     category: form.cat,
     description: form.description,
     free: form.free,
     price: form.price,
+    image_url: imageUrl,
     owner_id: user?.id || null,
   });
   setSubmitted(true);
+  onSuccess && onSuccess({...form, imageUrl, image_url: imageUrl});
 }} style={{ width:"100%",
           border:"none", borderRadius:13, padding:"14px", fontSize:14, fontWeight:700,
           cursor:canSubmit?"pointer":"default",
@@ -3215,8 +3607,8 @@ function PostJob({ onBack, onSuccess, userName }) {
 
 function PostEvent({ onBack, onSuccess }) {
   const [form, setForm] = useState({
-    title:"", org:"", date:"", location:"", state:"",
-    cat:"Kültür & Sanat", free:true, price:"", description:"",
+    title:"", org:"", date:"", location:"", state:"", zip:"",
+    cat:"Kültür & Sanat", free:true, price:"", description:"", image:null,
   });
   const [submitted, setSubmitted] = useState(false);
   const set = (k,v) => setForm(f=>({...f,[k]:v}));
@@ -3281,7 +3673,7 @@ function PostEvent({ onBack, onSuccess }) {
       </div>
 
       <div style={{ padding:"12px 18px 28px", borderTop:`1px solid ${C.border}` }}>
-        <button onClick={onSuccess} style={{ width:"100%", background:"none",
+        <button onClick={onBack} style={{ width:"100%", background:"none",
           border:`1.5px solid ${C.border}`, borderRadius:13, padding:"13px",
           fontSize:13, color:C.textSub, cursor:"pointer", fontWeight:600 }}>
           Şimdilik atla, etkinliklere dön
@@ -3362,6 +3754,45 @@ function PostEvent({ onBack, onSuccess }) {
             {US_STATES.map(s=><option key={s} value={s}>{s}</option>)}
           </select>
         </div>
+        {/* Fotoğraf */}
+        <div style={{ marginBottom:14 }}>
+          <div style={{ fontSize:11, fontWeight:700, color:C.textSub,
+            letterSpacing:0.5, marginBottom:6 }}>Etkinlik Fotoğrafı</div>
+          {form.image ? (
+            <div style={{ position:"relative" }}>
+              <img src={URL.createObjectURL(form.image)} alt="etkinlik"
+                style={{ width:"100%", height:160, objectFit:"cover",
+                  borderRadius:11, border:`1.5px solid ${C.border}` }}/>
+              <div onClick={()=>set("image",null)}
+                style={{ position:"absolute", top:8, right:8,
+                  background:"rgba(0,0,0,0.6)", borderRadius:"50%",
+                  width:28, height:28, display:"flex", alignItems:"center",
+                  justifyContent:"center", cursor:"pointer", color:"white", fontSize:14 }}>✕</div>
+            </div>
+          ) : (
+            <label style={{ display:"flex", flexDirection:"column", alignItems:"center",
+              justifyContent:"center", gap:8, padding:"24px",
+              border:`2px dashed ${C.border}`, borderRadius:11,
+              background:C.redPale, cursor:"pointer" }}>
+              <span style={{ fontSize:32 }}>📷</span>
+              <span style={{ fontSize:12, color:C.textSub, fontWeight:600 }}>Fotoğraf Seç</span>
+              <span style={{ fontSize:10, color:C.textMute }}>JPG, PNG — max 5MB</span>
+              <input type="file" accept="image/*" style={{ display:"none" }}
+                onChange={e=>{ if(e.target.files[0]) set("image", e.target.files[0]); }}/>
+            </label>
+          )}
+        </div>
+        {/* Zip Code */}
+        <div style={{ marginBottom:14 }}>
+          <div style={{ fontSize:11, fontWeight:700, color:C.textSub,
+            letterSpacing:0.5, marginBottom:6 }}>Zip Code</div>
+          <input value={form.zip} onChange={e=>set("zip",e.target.value)}
+            placeholder="örn. 10001"
+            maxLength={10}
+            style={{ width:"100%", boxSizing:"border-box", padding:"11px 14px",
+              borderRadius:11, border:`1.5px solid ${C.border}`,
+              background:C.redPale, fontSize:14, color:C.text, outline:"none" }}/>
+        </div>
 
         {/* Kategori */}
         <div style={{ marginBottom:14 }}>
@@ -3419,19 +3850,36 @@ function PostEvent({ onBack, onSuccess }) {
         borderTop:`1px solid ${C.border}` }}>
         <button onClick={async()=>{ if(!canSubmit) return;
   const { data: { user } } = await supabase.auth.getUser();
+  let imageUrl = null;
+  if (form.image) {
+    const ext = form.image.name.split('.').pop();
+    const fileName = `${Date.now()}.${ext}`;
+    const { data: uploadData, error: uploadError } = await supabase.storage
+      .from('events')
+      .upload(fileName, form.image, { contentType: form.image.type });
+    console.log("Upload data:", uploadData);
+console.log("Upload error:", JSON.stringify(uploadError));
+    if (uploadData) {
+      const { data: urlData } = supabase.storage.from('events').getPublicUrl(fileName);
+      imageUrl = urlData.publicUrl;
+    }
+  }
   await supabase.from("events").insert({
     title: form.title,
     org: form.org,
     date: form.date,
     location: form.location,
     state: form.state,
+    zip: form.zip,
     category: form.cat,
     description: form.description,
     free: form.free,
     price: form.price,
+    image_url: imageUrl,
     owner_id: user?.id || null,
   });
   setSubmitted(true);
+  onSuccess && onSuccess({...form, imageUrl, image_url: imageUrl});
 }} style={{ width:"100%",
           border:"none", borderRadius:13, padding:"14px", fontSize:14, fontWeight:700,
           cursor:canSubmit?"pointer":"default",
@@ -3471,11 +3919,16 @@ function BusinessOwnerProfile({ business, onBack, reviews, onEdit, onUpdate }) {
           ← Geri
         </button>
         <div style={{ display:"flex", alignItems:"center", gap:14 }}>
-          <div style={{ width:58, height:58, borderRadius:16, flexShrink:0,
-            background:"rgba(255,255,255,0.2)", border:"2px solid rgba(255,255,255,0.4)",
-            display:"flex", alignItems:"center", justifyContent:"center", fontSize:28 }}>
-            {business.img}
-          </div>
+          <div onClick={()=>{ if(business.image_url) setPhotoView(business.image_url); }}
+              style={{ width:58, height:58, borderRadius:16, flexShrink:0,
+              background:"rgba(255,255,255,0.2)", border:"2px solid rgba(255,255,255,0.4)",
+              display:"flex", alignItems:"center", justifyContent:"center", fontSize:28,
+              overflow:"hidden", cursor:business.image_url?"zoom-in":"default" }}>
+              {business.image_url
+                ? <img src={business.image_url} alt={business.name}
+                    style={{ width:"100%", height:"100%", objectFit:"cover" }}/>
+                : business.img}
+            </div>
           <div style={{ flex:1 }}>
             <div style={{ display:"flex", alignItems:"center", gap:8 }}>
               <div style={{ fontSize:18, fontWeight:700, color:C.white }}>{business.name}</div>
@@ -3933,7 +4386,7 @@ function SearchOverlay({ history, onSelect, onClear, onClose }) {
 function UserProfilePage({ user, reviews, onBack }) {
   const userReviews = reviews.filter(r=>r.user===user.name);
   return (
-    <div style={{ height:"100vh", display:"flex", flexDirection:"column", background:C.bgSoft }}>
+    <div style={{ height:"100vh", display:"flex", flexDirection:"column", background:C.bgSoft, width:"100%" }}>
       <div style={{ background:`linear-gradient(135deg,${C.red},${C.redDark})`,
         padding:"20px 20px 32px" }}>
         <button onClick={onBack} style={{ background:"none", border:"none",
@@ -3998,6 +4451,23 @@ function UserProfilePage({ user, reviews, onBack }) {
             </div>
           );
         })}
+      </div>
+    </div>
+  );
+}
+
+function PhotoModal({ url, onClose }) {
+  if (!url) return null;
+  return (
+    <div onClick={onClose} style={{ position:"fixed", top:0, left:0, right:0, bottom:0,
+      background:"rgba(0,0,0,0.9)", zIndex:500,
+      display:"flex", alignItems:"center", justifyContent:"center", padding:20 }}>
+      <div onClick={e=>e.stopPropagation()} style={{ position:"relative", maxWidth:430, width:"100%" }}>
+        <img src={url} alt="" style={{ width:"100%", borderRadius:16, objectFit:"contain", maxHeight:"80vh" }}/>
+        <div onClick={onClose} style={{ position:"absolute", top:-16, right:-16,
+          width:36, height:36, borderRadius:"50%", background:"rgba(255,255,255,0.2)",
+          display:"flex", alignItems:"center", justifyContent:"center",
+          cursor:"pointer", fontSize:18, color:"white" }}>✕</div>
       </div>
     </div>
   );
@@ -4308,6 +4778,9 @@ useEffect(() => {
     reviewCount:0, bizCount:0,
   });
   const [myBusiness, setMyBusiness] = useState(null);
+const [myEvents, setMyEvents] = useState([]);
+const [rsvpEvents, setRsvpEvents] = useState([]);
+const [selectedEventFromProfile, setSelectedEventFromProfile] = useState(null);
 
   const pendingBiz = dbBusinesses.filter(b=>b.status==="pending" || (!b.status && !b.verified));
 
@@ -4415,7 +4888,33 @@ useEffect(() => {
   const handleRegisterBiz = async (form) => {
     const catInfo = categories.find(c=>c.id===form.category)||{};
     const { data: { user } } = await supabase.auth.getUser();
-    
+
+    let imageUrl = null;
+    if (form.image) {
+      const ext = form.image.name.split('.').pop();
+      const fileName = `${Date.now()}.${ext}`;
+      const { data: uploadData } = await supabase.storage
+        .from('business')
+        .upload(fileName, form.image, { contentType: form.image.type });
+      if (uploadData) {
+        const { data: urlData } = supabase.storage.from('business').getPublicUrl(fileName);
+        imageUrl = urlData.publicUrl;
+      }
+    }
+
+    const galleryUrls = [];
+    for (const img of form.gallery) {
+      const ext = img.name.split('.').pop();
+      const fileName = `gallery_${Date.now()}_${Math.random().toString(36).slice(2)}.${ext}`;
+      const { data: uploadData } = await supabase.storage
+        .from('business')
+        .upload(fileName, img, { contentType: img.type });
+      if (uploadData) {
+        const { data: urlData } = supabase.storage.from('business').getPublicUrl(fileName);
+        galleryUrls.push(urlData.publicUrl);
+      }
+    }
+
     const { data, error } = await supabase.from("businesses").insert({
       name: form.name,
       category: form.category,
@@ -4428,6 +4927,8 @@ useEffect(() => {
       address: `${form.address}, ${form.city}, ${form.state} ${form.zip}`,
       description: form.description,
       hours: form.hours.map(h=>({ open:h.open, from:h.from, to:h.to })),
+      image_url: imageUrl,
+      gallery_urls: galleryUrls,
       owner_id: user?.id || null,
     }).select().single();
 
@@ -4443,6 +4944,8 @@ useEffect(() => {
       verified: false,
       onaylı: false,
       img: catInfo.icon||"🏢",
+      image_url: imageUrl,
+      gallery_urls: galleryUrls,
       phone: form.phone,
       address: `${form.address}, ${form.city}, ${form.state} ${form.zip}`,
       desc: form.description,
@@ -4462,9 +4965,9 @@ useEffect(() => {
   };
 
   const W = ({children}) => (
-    <div style={{ maxWidth:430, margin:"0 auto", minHeight:"100vh",
+    <div style={{ minHeight:"100vh",
       fontFamily:"'Montserrat',system-ui,sans-serif",
-      position:"relative", overflowY:"auto" }}>
+      position:"relative", overflowY:"auto", width:"100%" }}>
       <FontInjector/>
       {showSplash && <SplashScreen onDone={()=>setShowSplash(false)}/>}
       {children}
@@ -4478,7 +4981,12 @@ useEffect(() => {
   if (screen==="register")    return <W><RegisterBusiness onBack={()=>setScreen("main")} onSuccess={handleRegisterBiz}/></W>;
   if (screen==="editprofile") return <W><EditProfile profile={userProfile} onBack={()=>setScreen("main")} onSave={p=>{setUserProfile(p);setScreen("main");}}/></W>;
   if (screen==="postjob")     return <W><PostJob onBack={()=>setScreen("main")} onSuccess={(form)=>{ addJob(form); setSubScreen("jobs"); setScreen("main"); }} userName={userProfile.name}/></W>;
-  if (screen==="postevent")   return <W><PostEvent onBack={()=>setScreen("main")} onSuccess={()=>{setSubScreen("events");setScreen("main");}}/></W>;
+  if (screen==="postevent")   return <W><PostEvent onBack={()=>setScreen("main")} onSuccess={(form)=>{
+  const newEvent = {...form, id:Date.now(), img:"🎉", attendees:0, cat:form.cat||"Kültür & Sanat", image_url:form.image_url||form.imageUrl||null};
+  setMyEvents(prev=>[...prev, newEvent]);
+  setDbEvents(prev=>[...prev, newEvent]);
+  setSubScreen("events"); setScreen("main");
+}}/></W>;
   if (screen==="notifications") return <W><NotificationsScreen notifications={notifications} onBack={()=>setScreen("main")} onMarkRead={markAllRead} onNavigate={n=>{
     setScreen("main");
     if (n.icon==="💼") setSubScreen("jobs");
@@ -4490,7 +4998,7 @@ useEffect(() => {
   if (viewUser)               return <W><UserProfilePage user={viewUser} reviews={reviews} onBack={()=>setViewUser(null)}/></W>;
 
   if (subScreen==="jobs")   return <W><Jobs   onBack={()=>setSubScreen(null)} onPost={loggedIn?()=>setScreen("postjob"):()=>setScreen("auth")} extraJobs={[...extraJobs,...dbJobs]}/></W>;
-  if (subScreen==="events") return <W><Events onBack={()=>setSubScreen(null)} onPost={loggedIn?()=>setScreen("postevent"):()=>setScreen("auth")} dbEvents={dbEvents}/></W>;
+  if (subScreen==="events") return <W><Events onBack={()=>setSubScreen(null)} onPost={loggedIn?()=>setScreen("postevent"):()=>setScreen("auth")} dbEvents={dbEvents} rsvpList={rsvpEvents} onRsvpChange={setRsvpEvents} initialEvent={selectedEventFromProfile} onClearInitial={()=>setSelectedEventFromProfile(null)}/></W>;
 
   if (business) return (
     <W>
@@ -4518,7 +5026,7 @@ useEffect(() => {
   ];
 
   return (
-    <div style={{ maxWidth:430, margin:"0 auto", height:"100vh",
+    <div style={{ height:"100vh", width:"100%",
       fontFamily:"'Montserrat',system-ui,sans-serif", background:C.bgSoft,
       display:"flex", flexDirection:"column", position:"relative" }}>
       <FontInjector/>
@@ -4547,6 +5055,10 @@ useEffect(() => {
               myBusiness={myBusiness}
               onMyBusiness={()=>setScreen("bizprofile")}
               onRegisterBiz={loggedIn?()=>setScreen("register"):()=>setScreen("auth")}
+              myEvents={myEvents}
+              onGoEvents={(ev)=>{ setSelectedEventFromProfile(ev); setSubScreen("events"); }}
+              rsvpEvents={rsvpEvents}
+dbEvents={[...events, ...dbEvents]}
               lang={lang} onLangChange={setLang}
               onAdmin={()=>setScreen("admin")}
               onLogout={async()=>{ await supabase.auth.signOut(); setLoggedIn(false); setScreen("main"); }}
