@@ -4893,7 +4893,10 @@ useEffect(() => {
         // Profil
         const { data: prof } = await supabase.from("profiles").select("*").eq("id", user.id).single();
         if (prof?.favorites) setFavorites(prof.favorites);
-        if (prof) setUserProfile(p=>({...p, ...prof, id: user.id}));
+        if (prof) setUserProfile(p=>({...p, ...prof, id: user.id,
+          name: prof.name || user.email?.split("@")[0] || "Kullanıcı",
+          email: prof.email || user.email || "",
+        }));
         // Kendi işletmesi
         const { data: myBiz } = await supabase.from("businesses").select("*").eq("owner_id", user.id).single();
         if (myBiz) setMyBusiness({...myBiz, cat:myBiz.category, desc:myBiz.description,
@@ -4906,18 +4909,16 @@ useEffect(() => {
     };
     fetchData();
 
-    const { data: { subscription } } = supabase.auth.onAuthStateChange(async (_event, session) => {
-      setLoggedIn(!!session);
-      if (session?.user) {
-        setUserProfile(p=>({...p, id: session.user.id}));
-        // Giriş yapılınca myEvents ve myBusiness yenile
-        const { data: myBiz } = await supabase.from("businesses").select("*").eq("owner_id", session.user.id).single();
-        if (myBiz) setMyBusiness({...myBiz, cat:myBiz.category, desc:myBiz.description,
-          img: categories.find(c=>c.id===myBiz.category)?.icon||"🏢",
-          onaylı: myBiz.featured, rating: myBiz.rating||0, reviews: myBiz.reviews||0, tags: myBiz.tags||[]});
-        const { data: myEvts } = await supabase.from("events").select("*").eq("owner_id", session.user.id);
-        if (myEvts) setMyEvents(myEvts.map(e=>({...e, cat:e.category, img:"🎉", attendees:0})));
+    const { data: { subscription } } = supabase.auth.onAuthStateChange(async (event, session) => {
+      if (event === "SIGNED_OUT") {
+        setLoggedIn(false);
+        setUserProfile({ id:null, name:"", avatar:"👤", city:"", state:"", email:"", phone:"", reviewCount:0, bizCount:0 });
+        setMyBusiness(null);
+        setMyEvents([]);
+        setFavorites([]);
+        return;
       }
+      setLoggedIn(!!session);
     });
     return () => subscription.unsubscribe();
   }, []);
@@ -5230,7 +5231,16 @@ const [selectedEventFromProfile, setSelectedEventFromProfile] = useState(null);
 dbEvents={[...events, ...dbEvents]}
               lang={lang} onLangChange={setLang}
               onAdmin={()=>setScreen("admin")}
-              onLogout={async()=>{ await supabase.auth.signOut(); setLoggedIn(false); setScreen("main"); }}
+              onLogout={async()=>{
+                await supabase.auth.signOut();
+                setLoggedIn(false);
+                setUserProfile({ id:null, name:"", avatar:"👤", city:"", state:"", email:"", phone:"", reviewCount:0, bizCount:0 });
+                setMyBusiness(null);
+                setMyEvents([]);
+                setFavorites([]);
+                setTab("home");
+                setScreen("main");
+              }}
               dbBusinesses={dbBusinesses}
               reviews={reviews}/>
           : tab==="contact"
