@@ -4890,7 +4890,7 @@ export default function PusulaApp() {
   const [searchHistory, setSearchHistory] = useState(["Restoran","Avukat","Brooklyn"]);
   const [extraJobs,   setExtraJobs]   = useState([]); // FIX 4: dynamic jobs
 useEffect(() => {
-    // Genel verileri çek (herkese açık)
+    // Genel verileri çek
     const fetchPublic = async () => {
       const { data: biz } = await supabase.from("businesses").select("*");
       const { data: job } = await supabase.from("jobs").select("*");
@@ -4918,40 +4918,53 @@ useEffect(() => {
     };
     fetchPublic();
 
-    // Kullanıcıya özel verileri yükle
+    // Kullanıcı verilerini yükle
     const loadUserData = async (userId, userEmail) => {
-      const { data: prof } = await supabase.from("profiles").select("*").eq("id", userId).single();
-      if (prof?.favorites) setFavorites(prof.favorites);
-      setUserProfile(p=>({...p, ...(prof||{}), id: userId,
-        name: prof?.name || userEmail?.split("@")[0] || "Kullanıcı",
-        email: prof?.email || userEmail || "",
-      }));
-      const { data: myBizArr } = await supabase.from("businesses").select("*").eq("owner_id", userId).limit(1);
-      const myBiz = myBizArr?.[0] || null;
-      if (myBiz) setMyBusiness({...myBiz, cat:myBiz.category, desc:myBiz.description,
-        img: categories.find(c=>c.id===myBiz.category)?.icon||"🏢",
-        onaylı: myBiz.featured, rating: myBiz.rating||0, reviews: myBiz.reviews||0, tags: myBiz.tags||[]});
-      else setMyBusiness(null);
-      const { data: myEvts } = await supabase.from("events").select("*").eq("owner_id", userId);
-      setMyEvents(myEvts ? myEvts.map(e=>({...e, cat:e.category, img:"🎉", attendees:0})) : []);
+      try {
+        const { data: prof } = await supabase.from("profiles").select("*").eq("id", userId).single();
+        if (prof?.favorites) setFavorites(prof.favorites);
+        setUserProfile(p=>({...p, ...(prof||{}), id: userId,
+          name: prof?.name || userEmail?.split("@")[0] || "",
+          email: prof?.email || userEmail || "",
+        }));
+      } catch(e) {}
+      try {
+        const { data: bizArr } = await supabase.from("businesses").select("*").eq("owner_id", userId).limit(1);
+        const myBiz = bizArr?.[0] || null;
+        if (myBiz) setMyBusiness({...myBiz, cat:myBiz.category, desc:myBiz.description,
+          img: categories.find(c=>c.id===myBiz.category)?.icon||"🏢",
+          onaylı: myBiz.featured, rating: myBiz.rating||0, reviews: myBiz.reviews||0, tags: myBiz.tags||[]});
+        else setMyBusiness(null);
+      } catch(e) {}
+      try {
+        const { data: evts } = await supabase.from("events").select("*").eq("owner_id", userId);
+        setMyEvents(evts ? evts.map(e=>({...e, cat:e.category, img:"🎉", attendees:0})) : []);
+      } catch(e) {}
     };
 
-    // Auth değişikliklerini dinle — açılışta INITIAL_SESSION ile tetiklenir
-    const { data: { subscription } } = supabase.auth.onAuthStateChange(async (event, session) => {
-      if (event === "SIGNED_OUT") {
+    // Önce mevcut session'ı kontrol et
+    supabase.auth.getSession().then(({ data: { session } }) => {
+      if (session?.user) {
+        setLoggedIn(true);
+        loadUserData(session.user.id, session.user.email);
+      }
+    });
+
+    // Sonraki auth değişikliklerini dinle
+    const { data: { subscription } } = supabase.auth.onAuthStateChange((event, session) => {
+      if (event === "SIGNED_IN") {
+        setLoggedIn(true);
+        if (session?.user) loadUserData(session.user.id, session.user.email);
+      } else if (event === "SIGNED_OUT") {
         setLoggedIn(false);
         setUserProfile({ id:null, name:"", avatar:"👤", city:"", state:"", email:"", phone:"", reviewCount:0, bizCount:0 });
         setMyBusiness(null);
         setMyEvents([]);
         setFavorites([]);
-        return;
-      }
-      if (session?.user) {
-        setLoggedIn(true);
-        await loadUserData(session.user.id, session.user.email);
       }
     });
     return () => subscription.unsubscribe();
+  }, []);
   }, []);
   const [notifications, setNotifications] = useState([
     { icon:"✅", title:"Bosphorus Kitchen yorumunuza yanıt verdi", body:"\"Teşekkürler, sizi tekrar görmek isteriz!\"", time:"2 saat önce",   read:false },
