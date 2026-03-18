@@ -7,7 +7,6 @@ export const supabase = createClient(supabaseUrl, supabaseKey, {
   auth: {
     persistSession: true,
     storageKey: 'pusula-auth',
-    storage: window.localStorage,
     autoRefreshToken: true,
     detectSessionInUrl: false,
   }
