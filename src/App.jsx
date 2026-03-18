@@ -1859,7 +1859,7 @@ function NotifPrefs() {
 }
 function ContactPage() {
   return (
-    <div style={{ height:"100vh", display:"flex", flexDirection:"column", background:C.bgSoft, overflowY:"auto" }}>
+    <div style={{ minHeight:"100%", display:"flex", flexDirection:"column", background:C.bgSoft }}>
       
       {/* Header */}
       <div style={{ background:`linear-gradient(135deg,${C.red},${C.redDark})`,
