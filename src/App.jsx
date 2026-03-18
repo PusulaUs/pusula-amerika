@@ -2847,16 +2847,7 @@ function BusinessDetail({ business, onBack, favorites, toggleFav, reviews, onAdd
                     </div>
                   ))}
                 </div>
-                <div style={{ marginTop:14, padding:"13px 16px",
-                  background:C.white, border:`1px solid ${C.border}`,
-                  borderRadius:14, textAlign:"center" }}>
-                  <div style={{ fontSize:12, color:C.textMute, marginBottom:6 }}>
-                    İşletme sahibi misiniz?
-                  </div>
-                  <div style={{ fontSize:13, fontWeight:700, color:C.red, cursor:"pointer" }}>
-                    📷 Fotoğraf Ekle
-                  </div>
-                </div>
+
               </>
             )}
           </div>
@@ -3622,53 +3613,17 @@ function PostEvent({ onBack, onSuccess }) {
         </div>
       </div>
 
-      <div style={{ flex:1, overflowY:"auto", padding:"20px 18px" }}>
-        <div style={{ fontSize:13, fontWeight:700, color:C.text, marginBottom:14, textAlign:"center" }}>
-          Daha fazla kişiye ulaşmak ister misiniz? 🚀
+      <div style={{ flex:1, display:"flex", alignItems:"center", justifyContent:"center", padding:"20px" }}>
+        <div style={{ textAlign:"center", color:C.textMute, fontSize:13, lineHeight:1.8 }}>
+          Etkinliğiniz incelendikten sonra yayına alınacaktır. 🎉
         </div>
-
-        {[
-          { icon:"🔔", title:"Bildirim Gönder", desc:`Tüm ${form.state||"bölge"} kullanıcılarına bildirim git`, price:"$15", color:C.turq },
-          { icon:"✅", title:"Öne Çıkar", desc:"Ana sayfada 7 gün üst sırada görün", price:"$25", color:"#F59E0B" },
-          { icon:"🚀", title:"Tam Paket", desc:"Bildirim + Öne çıkarma + Bu haftanın etkinliği rozeti", price:"$40", color:C.red, best:true },
-        ].map(pkg=>(
-          <div key={pkg.title} style={{ background:C.white,
-            border:`2px solid ${pkg.best?pkg.color:C.border}`,
-            borderRadius:16, padding:"14px 16px", marginBottom:10,
-            position:"relative", overflow:"hidden" }}>
-            {pkg.best && (
-              <div style={{ position:"absolute", top:10, right:10,
-                background:`linear-gradient(135deg,${C.red},${C.redDark})`,
-                borderRadius:6, padding:"2px 8px",
-                fontSize:9, fontWeight:700, color:C.white }}>🔥 EN İYİ</div>
-            )}
-            <div style={{ display:"flex", alignItems:"center", gap:12, marginBottom:8 }}>
-              <div style={{ width:40, height:40, borderRadius:11, flexShrink:0,
-                background:`${pkg.color}22`, border:`1px solid ${pkg.color}44`,
-                display:"flex", alignItems:"center", justifyContent:"center", fontSize:20 }}>
-                {pkg.icon}
-              </div>
-              <div style={{ flex:1 }}>
-                <div style={{ fontSize:13, fontWeight:700, color:C.text }}>{pkg.title}</div>
-                <div style={{ fontSize:11, color:C.textSub, lineHeight:1.4 }}>{pkg.desc}</div>
-              </div>
-              <div style={{ fontSize:15, fontWeight:800, color:pkg.color, flexShrink:0 }}>{pkg.price}</div>
-            </div>
-            <button style={{ width:"100%", border:"none", borderRadius:10,
-              padding:"10px", fontSize:12, fontWeight:700, cursor:"pointer",
-              background:pkg.best?`linear-gradient(135deg,${C.red},${C.redDark})`:`${pkg.color}22`,
-              color:pkg.best?C.white:pkg.color }}>
-              {pkg.title} — {pkg.price} Satın Al
-            </button>
-          </div>
-        ))}
       </div>
 
       <div style={{ padding:"12px 18px 28px", borderTop:`1px solid ${C.border}` }}>
         <button onClick={onBack} style={{ width:"100%", background:"none",
           border:`1.5px solid ${C.border}`, borderRadius:13, padding:"13px",
           fontSize:13, color:C.textSub, cursor:"pointer", fontWeight:600 }}>
-          Şimdilik atla, etkinliklere dön
+          Etkinliklere Dön
         </button>
       </div>
     </div>
@@ -3801,28 +3756,7 @@ function PostEvent({ onBack, onSuccess }) {
           </div>
         </div>
 
-        {/* Ücretsiz / Ücretli toggle */}
-        <div style={{ marginBottom:14 }}>
-          <div style={{ fontSize:11, fontWeight:700, color:C.textSub,
-            letterSpacing:0.5, marginBottom:8 }}>Giriş Ücreti</div>
-          <div style={{ display:"flex", gap:8 }}>
-            {[{v:true,l:"Ücretsiz"},{v:false,l:"Ücretli"}].map(o=>(
-              <div key={String(o.v)} onClick={()=>set("free",o.v)} style={{ flex:1,
-                padding:"10px", borderRadius:11, textAlign:"center",
-                fontSize:12, fontWeight:700, cursor:"pointer",
-                background: form.free===o.v ? C.red : C.redPale,
-                border:`1px solid ${form.free===o.v ? C.red : C.border}`,
-                color: form.free===o.v ? C.white : C.textSub }}>{o.l}</div>
-            ))}
-          </div>
-          {!form.free && (
-            <input value={form.price} onChange={e=>set("price",e.target.value)}
-              placeholder="örn. $25" style={{ marginTop:8, width:"100%",
-                boxSizing:"border-box", padding:"11px 14px", borderRadius:11,
-                border:`1.5px solid ${C.border}`, background:C.redPale,
-                fontSize:14, color:C.text, outline:"none" }}/>
-          )}
-        </div>
+
 
         {/* Açıklama */}
         <div style={{ marginBottom:14 }}>
@@ -3882,6 +3816,117 @@ console.log("Upload error:", JSON.stringify(uploadError));
           🎉 Etkinliği Ekle
         </button>
       </div>
+    </div>
+  );
+}
+
+function BizPhotoUpload({ business }) {
+  const [uploading, setUploading] = useState(false);
+  const [msg, setMsg] = useState("");
+  const [profileUrl, setProfileUrl] = useState(business?.image_url||"");
+  const [gallery, setGallery] = useState(business?.gallery_urls||[]);
+
+  const uploadFile = async (file, path) => {
+    const ext = file.name.split(".").pop();
+    const fileName = `${path}_${Date.now()}.${ext}`;
+    const { error } = await supabase.storage.from("business").upload(fileName, file, { upsert:true });
+    if (error) throw error;
+    const { data } = supabase.storage.from("business").getPublicUrl(fileName);
+    return data.publicUrl;
+  };
+
+  const handleProfile = async (e) => {
+    const file = e.target.files[0];
+    if (!file) return;
+    setUploading(true); setMsg("");
+    try {
+      const url = await uploadFile(file, `profile_${business.id}`);
+      await supabase.from("businesses").update({ image_url: url }).eq("id", business.id);
+      setProfileUrl(url);
+      setMsg("✅ Profil fotoğrafı güncellendi!");
+    } catch { setMsg("❌ Yükleme başarısız, tekrar dene."); }
+    setUploading(false);
+  };
+
+  const handleGallery = async (e) => {
+    const files = Array.from(e.target.files).slice(0, 6 - gallery.length);
+    if (!files.length) return;
+    setUploading(true); setMsg("");
+    try {
+      const urls = await Promise.all(files.map(f => uploadFile(f, `gallery_${business.id}`)));
+      const newGallery = [...gallery, ...urls].slice(0, 6);
+      await supabase.from("businesses").update({ gallery_urls: newGallery }).eq("id", business.id);
+      setGallery(newGallery);
+      setMsg("✅ Galeri güncellendi!");
+    } catch { setMsg("❌ Yükleme başarısız, tekrar dene."); }
+    setUploading(false);
+  };
+
+  const removeGallery = async (url) => {
+    const newGallery = gallery.filter(u => u !== url);
+    await supabase.from("businesses").update({ gallery_urls: newGallery }).eq("id", business.id);
+    setGallery(newGallery);
+  };
+
+  return (
+    <div style={{ background:C.white, border:`1px solid ${C.border}`, borderRadius:16, padding:"16px", marginBottom:14 }}>
+      <div style={{ fontSize:11, fontWeight:700, color:C.textMute, letterSpacing:1.5, textTransform:"uppercase", marginBottom:14 }}>
+        FOTOĞRAFLAR
+      </div>
+
+      {/* Profil Fotoğrafı */}
+      <div style={{ marginBottom:16 }}>
+        <div style={{ fontSize:12, fontWeight:600, color:C.textSub, marginBottom:8 }}>Profil Fotoğrafı</div>
+        <div style={{ display:"flex", alignItems:"center", gap:12 }}>
+          <div style={{ width:64, height:64, borderRadius:14, overflow:"hidden", flexShrink:0,
+            background:C.redPale, border:`1.5px solid ${C.border}`,
+            display:"flex", alignItems:"center", justifyContent:"center", fontSize:28 }}>
+            {profileUrl
+              ? <img src={profileUrl} alt="profil" style={{ width:"100%", height:"100%", objectFit:"cover" }}/>
+              : "🏢"}
+          </div>
+          <label style={{ flex:1, padding:"10px 14px", borderRadius:11, textAlign:"center",
+            border:`1.5px dashed ${C.border}`, cursor:"pointer", fontSize:12,
+            color:C.red, fontWeight:700, background:C.redPale }}>
+            {uploading ? "Yükleniyor..." : "📷 Fotoğraf Seç"}
+            <input type="file" accept="image/*" onChange={handleProfile} style={{ display:"none" }} disabled={uploading}/>
+          </label>
+        </div>
+      </div>
+
+      {/* Galeri */}
+      <div>
+        <div style={{ display:"flex", justifyContent:"space-between", alignItems:"center", marginBottom:8 }}>
+          <div style={{ fontSize:12, fontWeight:600, color:C.textSub }}>Galeri ({gallery.length}/6)</div>
+          {gallery.length < 6 && (
+            <label style={{ fontSize:11, fontWeight:700, color:C.red, cursor:"pointer" }}>
+              + Fotoğraf Ekle
+              <input type="file" accept="image/*" multiple onChange={handleGallery} style={{ display:"none" }} disabled={uploading}/>
+            </label>
+          )}
+        </div>
+        {gallery.length > 0 ? (
+          <div style={{ display:"grid", gridTemplateColumns:"repeat(3,1fr)", gap:6 }}>
+            {gallery.map((url,i) => (
+              <div key={i} style={{ position:"relative", paddingTop:"100%", borderRadius:10, overflow:"hidden", background:C.redPale }}>
+                <img src={url} alt="" style={{ position:"absolute", inset:0, width:"100%", height:"100%", objectFit:"cover" }}/>
+                <div onClick={()=>removeGallery(url)} style={{ position:"absolute", top:4, right:4,
+                  background:"rgba(0,0,0,0.55)", borderRadius:"50%", width:20, height:20,
+                  display:"flex", alignItems:"center", justifyContent:"center",
+                  fontSize:11, color:C.white, cursor:"pointer", fontWeight:700 }}>✕</div>
+              </div>
+            ))}
+          </div>
+        ) : (
+          <div style={{ textAlign:"center", padding:"14px", color:C.textMute, fontSize:12,
+            border:`1.5px dashed ${C.border}`, borderRadius:10 }}>
+            Henüz galeri fotoğrafı yok
+          </div>
+        )}
+      </div>
+
+      {msg && <div style={{ marginTop:10, fontSize:12, fontWeight:600,
+        color: msg.startsWith("✅") ? "#16A34A" : C.red, textAlign:"center" }}>{msg}</div>}
     </div>
   );
 }
@@ -4053,62 +4098,8 @@ function BusinessOwnerProfile({ business, onBack, reviews, onEdit, onUpdate }) {
           ))}
         </div>
 
-        {/* onaylı yükseltme kartı */}
-        {!business.onaylı && (
-          <div style={{ background:`linear-gradient(135deg,#FEF3C7,#FDE68A)`,
-            border:"1.5px solid #F59E0B", borderRadius:16, padding:"16px",
-            marginBottom:14 }}>
-            <div style={{ fontSize:14, fontWeight:700, color:"#92400E", marginBottom:12 }}>
-              ✅ Onaylanmış Firmaya Geç — $9.99/ay
-            </div>
-            <div style={{ display:"flex", gap:8, marginBottom:14 }}>
-              {/* Ücretsiz */}
-              <div style={{ flex:1, background:"rgba(255,255,255,0.5)",
-                borderRadius:12, padding:"12px 10px" }}>
-                <div style={{ fontSize:11, fontWeight:700, color:"#92400E",
-                  marginBottom:8, textAlign:"center" }}>Ücretsiz</div>
-                {[
-                  ["✅","Temel listeleme"],
-                  ["✅","Telefon & adres"],
-                  ["❌","Fotoğraf galerisi"],
-                  ["❌","Arama'da üst sıra"],
-                  ["❌","İstatistikler"],
-                  ["❌","Bildirim gönderme"],
-                ].map(([ic,tx])=>(
-                  <div key={tx} style={{ fontSize:10, color:"#78350F",
-                    marginBottom:4, display:"flex", gap:4, alignItems:"center" }}>
-                    <span>{ic}</span><span>{tx}</span>
-                  </div>
-                ))}
-              </div>
-              {/* onaylı */}
-              <div style={{ flex:1, background:"linear-gradient(135deg,#F59E0B22,#D9770622)",
-                border:"1.5px solid #F59E0B", borderRadius:12, padding:"12px 10px" }}>
-                <div style={{ fontSize:11, fontWeight:700, color:"#92400E",
-                  marginBottom:8, textAlign:"center" }}>✅ onaylı</div>
-                {[
-                  ["✅","Temel listeleme"],
-                  ["✅","Telefon & adres"],
-                  ["✅","Fotoğraf galerisi"],
-                  ["✅","Arama'da üst sıra"],
-                  ["✅","İstatistikler"],
-                  ["✅","Bildirim gönderme"],
-                ].map(([ic,tx])=>(
-                  <div key={tx} style={{ fontSize:10, color:"#78350F",
-                    marginBottom:4, display:"flex", gap:4, alignItems:"center",
-                    fontWeight:600 }}>
-                    <span>{ic}</span><span>{tx}</span>
-                  </div>
-                ))}
-              </div>
-            </div>
-            <button style={{ width:"100%", border:"none", borderRadius:11,
-              padding:"11px", fontSize:13, fontWeight:700, cursor:"pointer",
-              background:"linear-gradient(135deg,#F59E0B,#D97706)", color:C.white }}>
-              $9.99/ay veya $99.99/yıl — Onaylanmış Firmaya Geç 🚀 🚀
-            </button>
-          </div>
-        )}
+        {/* Fotoğraf Yükleme */}
+        <BizPhotoUpload business={business}/>
 
         {/* Son yorumlar */}
         <div style={{ fontSize:10, fontWeight:700, color:C.textMute,
