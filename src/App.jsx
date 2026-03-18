@@ -1224,7 +1224,7 @@ function Jobs({ onBack, onPost, extraJobs=[] }) {
   );
 }
 
-function Events({ onBack, onPost, dbEvents=[], rsvpList=[], onRsvpChange, initialEvent=null, onClearInitial }) {
+function Events({ onBack, onPost, dbEvents=[], rsvpList=[], onRsvpChange, initialEvent=null, onClearInitial, currentUserId=null, onEditEvent }) {
   const [filter, setFilter] = useState("Tümü");
   const [rsvp, setRsvp] = useState(rsvpList||[]); // katılınan etkinlik id'leri
 const [selectedEvent, setSelectedEvent] = useState(initialEvent);
@@ -1287,13 +1287,21 @@ const [photoView, setPhotoView] = useState(null);
             <div style={{ fontSize:13, color:C.text, lineHeight:1.7 }}>{selectedEvent.description}</div>
           </div>
         )}
-        <button onClick={()=>{ const id=selectedEvent.id; setRsvp(p=>p.includes(id)?p.filter(x=>x!==id):[...p,id]); }}
-          style={{ width:"100%", border:"none", borderRadius:13, padding:"14px", fontSize:14, fontWeight:700,
-            cursor:"pointer", background:rsvp.includes(selectedEvent.id)
-              ?`linear-gradient(135deg,#28a745,#1e7e34)`
-              :`linear-gradient(135deg,${C.red},${C.redDark})`, color:C.white }}>
-          {rsvp.includes(selectedEvent.id) ? "✓ Katılıyorum" : "Katıl"}
-        </button>
+        {currentUserId && selectedEvent.owner_id === currentUserId ? (
+          <button onClick={()=>onEditEvent&&onEditEvent(selectedEvent)}
+            style={{ width:"100%", border:"none", borderRadius:13, padding:"14px", fontSize:14, fontWeight:700,
+              cursor:"pointer", background:`linear-gradient(135deg,${C.red},${C.redDark})`, color:C.white }}>
+            ✏️ Etkinliği Düzenle
+          </button>
+        ) : (
+          <button onClick={()=>{ const id=selectedEvent.id; setRsvp(p=>p.includes(id)?p.filter(x=>x!==id):[...p,id]); }}
+            style={{ width:"100%", border:"none", borderRadius:13, padding:"14px", fontSize:14, fontWeight:700,
+              cursor:"pointer", background:rsvp.includes(selectedEvent.id)
+                ?`linear-gradient(135deg,#28a745,#1e7e34)`
+                :`linear-gradient(135deg,${C.red},${C.redDark})`, color:C.white }}>
+            {rsvp.includes(selectedEvent.id) ? "✓ Katılıyorum" : "Katıl"}
+          </button>
+        )}
       </div>
     </div>
   );
@@ -1370,14 +1378,16 @@ const [photoView, setPhotoView] = useState(null);
                     {ev.free?"ÜCRETSİZ":ev.price}
                   </span>
                 </div>
-                <div onClick={()=>toggleRsvp(ev.id)} style={{
-                  background:rsvp.includes(ev.id)
+                <div onClick={()=>{ if(currentUserId && ev.owner_id===currentUserId){ onEditEvent&&onEditEvent(ev); } else { toggleRsvp(ev.id); } }} style={{
+                  background:currentUserId && ev.owner_id===currentUserId
+                    ? `linear-gradient(135deg,${C.red},${C.redDark})`
+                    : rsvp.includes(ev.id)
                     ?`linear-gradient(135deg,#28a745,#1e7e34)`
                     :`linear-gradient(135deg,${C.red},${C.redDark})`,
                   borderRadius:10, padding:"7px 16px",
                   fontSize:11, fontWeight:700, color:C.white, cursor:"pointer",
                   transition:"all 0.2s" }}>
-                  {rsvp.includes(ev.id)?"✓ Katılıyorum":"Katıl"}
+                  {currentUserId && ev.owner_id===currentUserId ? "✏️ Düzenle" : rsvp.includes(ev.id)?"✓ Katılıyorum":"Katıl"}
                 </div>
               </div>
             </div>
@@ -2203,23 +2213,32 @@ const [tab, setTab] = useState("info"); // info | favs | events
                   ETKİNLİKLERİM ({myEvents.length})
                 </div>
                 {myEvents.map((ev,i)=>(
-                  <div key={i} onClick={()=>onGoEvents&&onGoEvents(ev)} style={{ background:C.white, border:`1px solid ${C.border}`,
-                    borderRadius:16, padding:"14px 16px", marginBottom:10, cursor:"pointer" }}>
+                  <div key={i} style={{ background:C.white, border:`1px solid ${C.border}`,
+                    borderRadius:16, padding:"14px 16px", marginBottom:10 }}>
                     <div style={{ display:"flex", gap:12, alignItems:"center" }}>
                       <div style={{ width:46, height:46, borderRadius:12, flexShrink:0,
                         background:C.redPale, border:`1px solid ${C.border}`,
                         display:"flex", alignItems:"center", justifyContent:"center", fontSize:22 }}>
-                        {ev.img||"🎉"}
+                        {ev.image_url
+                          ? <img src={ev.image_url} alt="" style={{ width:"100%", height:"100%", objectFit:"cover", borderRadius:12 }}/>
+                          : "🎉"}
                       </div>
                       <div style={{ flex:1 }}>
                         <div style={{ fontSize:13, fontWeight:700, color:C.text, marginBottom:2 }}>{ev.title}</div>
                         <div style={{ fontSize:11, color:C.textMute, marginBottom:2 }}>📅 {ev.date}</div>
                         <div style={{ fontSize:11, color:C.textMute }}>📍 {ev.location}</div>
                       </div>
-                      <span style={{ background:"#D1FAE5", color:"#065F46",
-                        borderRadius:8, padding:"3px 8px", fontSize:10, fontWeight:700 }}>
-                        Aktif
-                      </span>
+                      <div style={{ display:"flex", flexDirection:"column", gap:6, alignItems:"flex-end" }}>
+                        <span style={{ background:"#D1FAE5", color:"#065F46",
+                          borderRadius:8, padding:"3px 8px", fontSize:10, fontWeight:700 }}>
+                          Aktif
+                        </span>
+                        <span onClick={()=>onGoEvents&&onGoEvents(ev)}
+                          style={{ background:C.red, color:C.white,
+                          borderRadius:8, padding:"3px 10px", fontSize:10, fontWeight:700, cursor:"pointer" }}>
+                          ✏️ Düzenle
+                        </span>
+                      </div>
                     </div>
                   </div>
                 ))}
@@ -3588,6 +3607,136 @@ function PostJob({ onBack, onSuccess, userName }) {
   );
 }
 
+function EventEditScreen({ event, onBack, onSave }) {
+  const [form, setForm] = useState({
+    title:    event.title    || "",
+    org:      event.org      || "",
+    date:     event.date     || "",
+    location: event.location || "",
+    state:    event.state    || "",
+    description: event.description || "",
+  });
+  const [uploading, setUploading] = useState(false);
+  const [imageUrl, setImageUrl]   = useState(event.image_url || "");
+  const [msg, setMsg]             = useState("");
+  const set = (k,v) => setForm(f=>({...f,[k]:v}));
+
+  const handleImage = async (e) => {
+    const file = e.target.files[0]; if(!file) return;
+    setUploading(true);
+    const ext = file.name.split(".").pop();
+    const fileName = `event_${event.id}_${Date.now()}.${ext}`;
+    const { error } = await supabase.storage.from("events").upload(fileName, file, { upsert:true });
+    if (!error) {
+      const { data } = supabase.storage.from("events").getPublicUrl(fileName);
+      setImageUrl(data.publicUrl);
+    }
+    setUploading(false);
+  };
+
+  const handleSave = async () => {
+    setMsg("");
+    const { error } = await supabase.from("events").update({
+      title:       form.title,
+      org:         form.org,
+      date:        form.date,
+      location:    form.location,
+      state:       form.state,
+      description: form.description,
+      image_url:   imageUrl,
+    }).eq("id", event.id);
+    if (error) { setMsg("❌ Kaydedilemedi, tekrar dene."); return; }
+    setMsg("✅ Etkinlik güncellendi!");
+    setTimeout(()=>onSave&&onSave({...event,...form,image_url:imageUrl}), 1000);
+  };
+
+  const handleDelete = async () => {
+    if (!window.confirm("Etkinliği silmek istediğinizden emin misiniz?")) return;
+    await supabase.from("events").delete().eq("id", event.id);
+    onSave && onSave(null);
+  };
+
+  return (
+    <div style={{ height:"100vh", display:"flex", flexDirection:"column", background:C.bgSoft }}>
+      <div style={{ background:`linear-gradient(135deg,${C.red},${C.redDark})`, padding:"20px 20px 28px" }}>
+        <button onClick={onBack} style={{ background:"none", border:"none",
+          color:"rgba(255,255,255,0.75)", fontSize:13, fontWeight:700,
+          cursor:"pointer", marginBottom:16, display:"flex", alignItems:"center", gap:6 }}>
+          ← Geri
+        </button>
+        <div style={{ fontSize:20, fontWeight:800, color:C.white }}>Etkinliği Düzenle</div>
+        <div style={{ fontSize:12, color:"rgba(255,255,255,0.7)", marginTop:4 }}>{event.title}</div>
+      </div>
+
+      <div style={{ flex:1, overflowY:"auto", padding:"20px 18px" }}>
+
+        {/* Fotoğraf */}
+        <div style={{ background:C.white, border:`1px solid ${C.border}`, borderRadius:16, padding:"16px", marginBottom:14 }}>
+          <div style={{ fontSize:11, fontWeight:700, color:C.textMute, letterSpacing:1.5, textTransform:"uppercase", marginBottom:12 }}>ETKİNLİK FOTOĞRAFI</div>
+          {imageUrl && (
+            <div style={{ borderRadius:12, overflow:"hidden", marginBottom:10, height:160 }}>
+              <img src={imageUrl} alt="" style={{ width:"100%", height:"100%", objectFit:"cover" }}/>
+            </div>
+          )}
+          <label style={{ display:"block", padding:"11px", borderRadius:11, textAlign:"center",
+            border:`1.5px dashed ${C.border}`, cursor:"pointer", fontSize:12,
+            color:C.red, fontWeight:700, background:C.redPale }}>
+            {uploading ? "Yükleniyor..." : imageUrl ? "📷 Fotoğrafı Değiştir" : "📷 Fotoğraf Ekle"}
+            <input type="file" accept="image/*" onChange={handleImage} style={{ display:"none" }} disabled={uploading}/>
+          </label>
+        </div>
+
+        {/* Form Alanları */}
+        <div style={{ background:C.white, border:`1px solid ${C.border}`, borderRadius:16, padding:"16px", marginBottom:14 }}>
+          <div style={{ fontSize:11, fontWeight:700, color:C.textMute, letterSpacing:1.5, textTransform:"uppercase", marginBottom:14 }}>ETKİNLİK BİLGİLERİ</div>
+          {[
+            { key:"title",    label:"Etkinlik Adı",   placeholder:"Etkinlik adı" },
+            { key:"org",      label:"Organizatör",    placeholder:"Organizasyon adı" },
+            { key:"date",     label:"Tarih",           placeholder:"örn. 15 Mart 2025" },
+            { key:"location", label:"Konum",           placeholder:"Şehir, mekan adı" },
+            { key:"state",    label:"Eyalet",          placeholder:"örn. New York" },
+          ].map(f=>(
+            <div key={f.key} style={{ marginBottom:12 }}>
+              <div style={{ fontSize:11, fontWeight:700, color:C.textSub, marginBottom:4 }}>{f.label}</div>
+              <input value={form[f.key]} onChange={e=>set(f.key,e.target.value)}
+                placeholder={f.placeholder}
+                style={{ width:"100%", boxSizing:"border-box", padding:"10px 12px",
+                  borderRadius:10, border:`1.5px solid ${C.border}`,
+                  background:C.redPale, fontSize:13, color:C.text, outline:"none" }}/>
+            </div>
+          ))}
+          <div style={{ marginBottom:4 }}>
+            <div style={{ fontSize:11, fontWeight:700, color:C.textSub, marginBottom:4 }}>Açıklama</div>
+            <textarea value={form.description} onChange={e=>set("description",e.target.value)}
+              rows={4} placeholder="Etkinlik hakkında bilgi..."
+              style={{ width:"100%", boxSizing:"border-box", padding:"10px 12px",
+                borderRadius:10, border:`1.5px solid ${C.border}`,
+                background:C.redPale, fontSize:13, color:C.text, outline:"none", resize:"vertical" }}/>
+          </div>
+        </div>
+
+        {msg && (
+          <div style={{ textAlign:"center", fontSize:13, fontWeight:700, marginBottom:14,
+            color: msg.startsWith("✅") ? "#16A34A" : C.red }}>{msg}</div>
+        )}
+      </div>
+
+      <div style={{ padding:"12px 18px 28px", borderTop:`1px solid ${C.border}`, background:C.white, display:"flex", flexDirection:"column", gap:10 }}>
+        <button onClick={handleSave} style={{ width:"100%", border:"none", borderRadius:13,
+          padding:"14px", fontSize:14, fontWeight:700, cursor:"pointer",
+          background:`linear-gradient(135deg,${C.red},${C.redDark})`, color:C.white }}>
+          💾 Değişiklikleri Kaydet
+        </button>
+        <button onClick={handleDelete} style={{ width:"100%", background:"none",
+          border:"1.5px solid #EF4444", borderRadius:13, padding:"12px",
+          fontSize:13, color:"#EF4444", cursor:"pointer", fontWeight:600 }}>
+          🗑️ Etkinliği Sil
+        </button>
+      </div>
+    </div>
+  );
+}
+
 function PostEvent({ onBack, onSuccess }) {
   const [form, setForm] = useState({
     title:"", org:"", date:"", location:"", state:"", zip:"",
@@ -4764,11 +4913,12 @@ useEffect(() => {
   const [reviews, setReviews] = useState([]);
 
   const [userProfile, setUserProfile] = useState({
-    name:"", avatar:"👤", city:"", state:"", email:"", phone:"",
+    id:null, name:"", avatar:"👤", city:"", state:"", email:"", phone:"",
     reviewCount:0, bizCount:0,
   });
   const [myBusiness, setMyBusiness] = useState(null);
 const [myEvents, setMyEvents] = useState([]);
+const [editingEvent, setEditingEvent] = useState(null);
 const [rsvpEvents, setRsvpEvents] = useState([]);
 const [selectedEventFromProfile, setSelectedEventFromProfile] = useState(null);
 
@@ -4988,7 +5138,8 @@ const [selectedEventFromProfile, setSelectedEventFromProfile] = useState(null);
   if (viewUser)               return <W><UserProfilePage user={viewUser} reviews={reviews} onBack={()=>setViewUser(null)}/></W>;
 
   if (subScreen==="jobs")   return <W><Jobs   onBack={()=>setSubScreen(null)} onPost={loggedIn?()=>setScreen("postjob"):()=>setScreen("auth")} extraJobs={[...extraJobs,...dbJobs]}/></W>;
-  if (subScreen==="events") return <W><Events onBack={()=>setSubScreen(null)} onPost={loggedIn?()=>setScreen("postevent"):()=>setScreen("auth")} dbEvents={dbEvents} rsvpList={rsvpEvents} onRsvpChange={setRsvpEvents} initialEvent={selectedEventFromProfile} onClearInitial={()=>setSelectedEventFromProfile(null)}/></W>;
+  if (editingEvent)          return <W><EventEditScreen event={editingEvent} onBack={()=>setEditingEvent(null)} onSave={(updated)=>{ if(updated){ setMyEvents(prev=>prev.map(e=>e.id===updated.id?updated:e)); } else { setMyEvents(prev=>prev.filter(e=>e.id!==editingEvent.id)); } setEditingEvent(null); setSubScreen(null); }}/></W>;
+  if (subScreen==="events") return <W><Events onBack={()=>setSubScreen(null)} onPost={loggedIn?()=>setScreen("postevent"):()=>setScreen("auth")} dbEvents={dbEvents} rsvpList={rsvpEvents} onRsvpChange={setRsvpEvents} initialEvent={selectedEventFromProfile} onClearInitial={()=>setSelectedEventFromProfile(null)} currentUserId={userProfile?.id} onEditEvent={(ev)=>setEditingEvent(ev)}/></W>;
 
   if (business) return (
     <W>
@@ -5046,7 +5197,7 @@ const [selectedEventFromProfile, setSelectedEventFromProfile] = useState(null);
               onMyBusiness={()=>setScreen("bizprofile")}
               onRegisterBiz={loggedIn?()=>setScreen("register"):()=>setScreen("auth")}
               myEvents={myEvents}
-              onGoEvents={(ev)=>{ setSelectedEventFromProfile(ev); setSubScreen("events"); }}
+              onGoEvents={(ev)=>{ setEditingEvent(ev); }}
               rsvpEvents={rsvpEvents}
 dbEvents={[...events, ...dbEvents]}
               lang={lang} onLangChange={setLang}
