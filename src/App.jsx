@@ -3101,6 +3101,7 @@ const [showPrivacy, setShowPrivacy] = useState(false);
         avatar: "👤",
       });
       onAuth({
+        id: data.user.id,
         name: form.name,
         email: form.email,
         avatar: "👤",
@@ -3115,6 +3116,7 @@ const [showPrivacy, setShowPrivacy] = useState(false);
       if (error) { setError("E-posta veya şifre hatalı."); return; }
       const { data: profile } = await supabase.from("profiles").select("*").eq("id", data.user.id).single();
       onAuth({
+        id: data.user.id,
         name: profile?.name || form.email.split("@")[0],
         email: form.email,
         avatar: profile?.avatar || "👤",
@@ -4924,7 +4926,8 @@ useEffect(() => {
         name: prof?.name || userEmail?.split("@")[0] || "Kullanıcı",
         email: prof?.email || userEmail || "",
       }));
-      const { data: myBiz } = await supabase.from("businesses").select("*").eq("owner_id", userId).maybeSingle();
+      const { data: myBizArr } = await supabase.from("businesses").select("*").eq("owner_id", userId).limit(1);
+      const myBiz = myBizArr?.[0] || null;
       if (myBiz) setMyBusiness({...myBiz, cat:myBiz.category, desc:myBiz.description,
         img: categories.find(c=>c.id===myBiz.category)?.icon||"🏢",
         onaylı: myBiz.featured, rating: myBiz.rating||0, reviews: myBiz.reviews||0, tags: myBiz.tags||[]});
@@ -5007,10 +5010,20 @@ const [selectedEventFromProfile, setSelectedEventFromProfile] = useState(null);
     ]);
   };
 
-  const handleAuth = profile => {
+  const handleAuth = async profile => {
     setUserProfile(p=>({...p,...profile}));
     setLoggedIn(true);
     if (profile.state) setUserState(profile.state);
+    // Kullanıcıya özel verileri yükle
+    if (profile.id) {
+      const { data: myBizArr } = await supabase.from("businesses").select("*").eq("owner_id", profile.id).limit(1);
+      const myBiz = myBizArr?.[0] || null;
+      if (myBiz) setMyBusiness({...myBiz, cat:myBiz.category, desc:myBiz.description,
+        img: categories.find(c=>c.id===myBiz.category)?.icon||"🏢",
+        onaylı: myBiz.featured, rating: myBiz.rating||0, reviews: myBiz.reviews||0, tags: myBiz.tags||[]});
+      const { data: myEvts } = await supabase.from("events").select("*").eq("owner_id", profile.id);
+      setMyEvents(myEvts ? myEvts.map(e=>({...e, cat:e.category, img:"🎉", attendees:0})) : []);
+    }
     setScreen("main");
   };
 
