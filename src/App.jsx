@@ -4890,15 +4890,34 @@ useEffect(() => {
       const { data: { user } } = await supabase.auth.getUser();
       if (user) {
         setLoggedIn(true);
+        // Profil
         const { data: prof } = await supabase.from("profiles").select("*").eq("id", user.id).single();
         if (prof?.favorites) setFavorites(prof.favorites);
-        if (prof) setUserProfile(prof);
+        if (prof) setUserProfile(p=>({...p, ...prof, id: user.id}));
+        // Kendi işletmesi
+        const { data: myBiz } = await supabase.from("businesses").select("*").eq("owner_id", user.id).single();
+        if (myBiz) setMyBusiness({...myBiz, cat:myBiz.category, desc:myBiz.description,
+          img: categories.find(c=>c.id===myBiz.category)?.icon||"🏢",
+          onaylı: myBiz.featured, rating: myBiz.rating||0, reviews: myBiz.reviews||0, tags: myBiz.tags||[]});
+        // Kendi etkinlikleri
+        const { data: myEvts } = await supabase.from("events").select("*").eq("owner_id", user.id);
+        if (myEvts) setMyEvents(myEvts.map(e=>({...e, cat:e.category, img:"🎉", attendees:0})));
       }
     };
     fetchData();
 
-    const { data: { subscription } } = supabase.auth.onAuthStateChange((_event, session) => {
+    const { data: { subscription } } = supabase.auth.onAuthStateChange(async (_event, session) => {
       setLoggedIn(!!session);
+      if (session?.user) {
+        setUserProfile(p=>({...p, id: session.user.id}));
+        // Giriş yapılınca myEvents ve myBusiness yenile
+        const { data: myBiz } = await supabase.from("businesses").select("*").eq("owner_id", session.user.id).single();
+        if (myBiz) setMyBusiness({...myBiz, cat:myBiz.category, desc:myBiz.description,
+          img: categories.find(c=>c.id===myBiz.category)?.icon||"🏢",
+          onaylı: myBiz.featured, rating: myBiz.rating||0, reviews: myBiz.reviews||0, tags: myBiz.tags||[]});
+        const { data: myEvts } = await supabase.from("events").select("*").eq("owner_id", session.user.id);
+        if (myEvts) setMyEvents(myEvts.map(e=>({...e, cat:e.category, img:"🎉", attendees:0})));
+      }
     });
     return () => subscription.unsubscribe();
   }, []);
@@ -5138,7 +5157,16 @@ const [selectedEventFromProfile, setSelectedEventFromProfile] = useState(null);
   if (viewUser)               return <W><UserProfilePage user={viewUser} reviews={reviews} onBack={()=>setViewUser(null)}/></W>;
 
   if (subScreen==="jobs")   return <W><Jobs   onBack={()=>setSubScreen(null)} onPost={loggedIn?()=>setScreen("postjob"):()=>setScreen("auth")} extraJobs={[...extraJobs,...dbJobs]}/></W>;
-  if (editingEvent)          return <W><EventEditScreen event={editingEvent} onBack={()=>setEditingEvent(null)} onSave={(updated)=>{ if(updated){ setMyEvents(prev=>prev.map(e=>e.id===updated.id?updated:e)); } else { setMyEvents(prev=>prev.filter(e=>e.id!==editingEvent.id)); } setEditingEvent(null); setSubScreen(null); }}/></W>;
+  if (editingEvent)          return <W><EventEditScreen event={editingEvent} onBack={()=>setEditingEvent(null)} onSave={(updated)=>{
+    if(updated){
+      setMyEvents(prev=>prev.map(e=>e.id===updated.id?{...e,...updated}:e));
+      setDbEvents(prev=>prev.map(e=>e.id===updated.id?{...e,...updated}:e));
+    } else {
+      setMyEvents(prev=>prev.filter(e=>e.id!==editingEvent.id));
+      setDbEvents(prev=>prev.filter(e=>e.id!==editingEvent.id));
+    }
+    setEditingEvent(null);
+  }}/></W>;
   if (subScreen==="events") return <W><Events onBack={()=>setSubScreen(null)} onPost={loggedIn?()=>setScreen("postevent"):()=>setScreen("auth")} dbEvents={dbEvents} rsvpList={rsvpEvents} onRsvpChange={setRsvpEvents} initialEvent={selectedEventFromProfile} onClearInitial={()=>setSelectedEventFromProfile(null)} currentUserId={userProfile?.id} onEditEvent={(ev)=>setEditingEvent(ev)}/></W>;
 
   if (business) return (
