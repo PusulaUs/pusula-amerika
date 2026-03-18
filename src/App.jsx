@@ -320,7 +320,7 @@ function Onboarding({ onDone }) {
   const [step, setStep]   = useState(0);
   const [sel, setSel]     = useState("");
   const [query, setQuery] = useState("");
-  const filtered = US_STATES.filter(s => s.toLowerCase().includes(query.toLowerCase()));
+  const filtered = US_STATES.filter(s => s.toLowerCase().includes(query.trim().toLowerCase()));
 
   return (
     <div style={{ height:"100vh", display:"flex", flexDirection:"column", background:C.white }}>
@@ -423,7 +423,7 @@ function Onboarding({ onDone }) {
               {query && <span onClick={()=>setQuery("")} style={{ color:C.textMute, cursor:"pointer" }}>✕</span>}
             </div>
             <div style={{ display:"flex", flexDirection:"column", gap:6 }}>
-              {filtered.slice(0,14).map(st => {
+              {filtered.map(st => {
                 const active = sel===st;
                 return (
                   <div key={st} onClick={()=>setSel(st)} style={{
@@ -438,11 +438,7 @@ function Onboarding({ onDone }) {
                   </div>
                 );
               })}
-              {filtered.length>14 && (
-                <div style={{ textAlign:"center", fontSize:11, color:C.textMute, padding:"6px 0" }}>
-                  +{filtered.length-14} eyalet — aramaya devam edin
-                </div>
-              )}
+
             </div>
           </>
         )}
@@ -4207,7 +4203,7 @@ function LocationModal({ currentState, currentCity, onSave, onClose }) {
   const [stateQ,   setStateQ]   = useState("");
   const [step,     setStep]     = useState(currentState?"city":"state"); // state | city
 
-  const filteredStates = US_STATES.filter(s=>s.toLowerCase().includes(stateQ.toLowerCase()));
+  const filteredStates = US_STATES.filter(s=>s.toLowerCase().includes(stateQ.trim().toLowerCase()));
   const citySuggestions = STATE_CITIES[selState] || [];
 
   return (
@@ -4264,7 +4260,7 @@ function LocationModal({ currentState, currentCity, onSave, onClose }) {
                 {stateQ&&<span onClick={()=>setStateQ("")} style={{ color:C.textMute, cursor:"pointer" }}>✕</span>}
               </div>
               <div style={{ display:"flex", flexDirection:"column", gap:6 }}>
-                {filteredStates.slice(0,20).map(st=>(
+                {filteredStates.map(st=>(
                   <div key={st} onClick={()=>{ setSelState(st); setSelCity(""); setStep("city"); }}
                     style={{ display:"flex", alignItems:"center", justifyContent:"space-between",
                       padding:"12px 14px", borderRadius:11, cursor:"pointer",
