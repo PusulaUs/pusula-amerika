@@ -4860,7 +4860,8 @@ export default function PusulaApp() {
   const [searchHistory, setSearchHistory] = useState(["Restoran","Avukat","Brooklyn"]);
   const [extraJobs,   setExtraJobs]   = useState([]); // FIX 4: dynamic jobs
 useEffect(() => {
-    const fetchData = async () => {
+    // Genel verileri çek (herkese açık)
+    const fetchPublic = async () => {
       const { data: biz } = await supabase.from("businesses").select("*");
       const { data: job } = await supabase.from("jobs").select("*");
       const { data: evt } = await supabase.from("events").select("*");
@@ -4880,35 +4881,31 @@ useEffect(() => {
         free: e.free, price: e.price||null,
       })));
       if (rev) setReviews(rev.map(r=>({
-        bizId: r.business_id,
-        stars: r.rating,
-        text: r.comment,
-        user: r.user_name,
-        avatar: "👤",
+        bizId: r.business_id, stars: r.rating, text: r.comment,
+        user: r.user_name, avatar: "👤",
         date: new Date(r.created_at).toLocaleDateString("tr-TR"),
       })));
-      const { data: { user } } = await supabase.auth.getUser();
-      if (user) {
-        setLoggedIn(true);
-        // Profil
-        const { data: prof } = await supabase.from("profiles").select("*").eq("id", user.id).single();
-        if (prof?.favorites) setFavorites(prof.favorites);
-        if (prof) setUserProfile(p=>({...p, ...prof, id: user.id,
-          name: prof.name || user.email?.split("@")[0] || "Kullanıcı",
-          email: prof.email || user.email || "",
-        }));
-        // Kendi işletmesi
-        const { data: myBiz } = await supabase.from("businesses").select("*").eq("owner_id", user.id).single();
-        if (myBiz) setMyBusiness({...myBiz, cat:myBiz.category, desc:myBiz.description,
-          img: categories.find(c=>c.id===myBiz.category)?.icon||"🏢",
-          onaylı: myBiz.featured, rating: myBiz.rating||0, reviews: myBiz.reviews||0, tags: myBiz.tags||[]});
-        // Kendi etkinlikleri
-        const { data: myEvts } = await supabase.from("events").select("*").eq("owner_id", user.id);
-        if (myEvts) setMyEvents(myEvts.map(e=>({...e, cat:e.category, img:"🎉", attendees:0})));
-      }
     };
-    fetchData();
+    fetchPublic();
 
+    // Kullanıcıya özel verileri yükle
+    const loadUserData = async (userId, userEmail) => {
+      const { data: prof } = await supabase.from("profiles").select("*").eq("id", userId).single();
+      if (prof?.favorites) setFavorites(prof.favorites);
+      setUserProfile(p=>({...p, ...(prof||{}), id: userId,
+        name: prof?.name || userEmail?.split("@")[0] || "Kullanıcı",
+        email: prof?.email || userEmail || "",
+      }));
+      const { data: myBiz } = await supabase.from("businesses").select("*").eq("owner_id", userId).maybeSingle();
+      if (myBiz) setMyBusiness({...myBiz, cat:myBiz.category, desc:myBiz.description,
+        img: categories.find(c=>c.id===myBiz.category)?.icon||"🏢",
+        onaylı: myBiz.featured, rating: myBiz.rating||0, reviews: myBiz.reviews||0, tags: myBiz.tags||[]});
+      else setMyBusiness(null);
+      const { data: myEvts } = await supabase.from("events").select("*").eq("owner_id", userId);
+      setMyEvents(myEvts ? myEvts.map(e=>({...e, cat:e.category, img:"🎉", attendees:0})) : []);
+    };
+
+    // Auth değişikliklerini dinle — açılışta INITIAL_SESSION ile tetiklenir
     const { data: { subscription } } = supabase.auth.onAuthStateChange(async (event, session) => {
       if (event === "SIGNED_OUT") {
         setLoggedIn(false);
@@ -4918,9 +4915,13 @@ useEffect(() => {
         setFavorites([]);
         return;
       }
-      setLoggedIn(!!session);
+      if (session?.user) {
+        setLoggedIn(true);
+        await loadUserData(session.user.id, session.user.email);
+      }
     });
     return () => subscription.unsubscribe();
+  }, []);
   }, []);
   const [notifications, setNotifications] = useState([
     { icon:"✅", title:"Bosphorus Kitchen yorumunuza yanıt verdi", body:"\"Teşekkürler, sizi tekrar görmek isteriz!\"", time:"2 saat önce",   read:false },
