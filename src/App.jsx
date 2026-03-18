@@ -1863,13 +1863,9 @@ function ContactPage() {
       
       {/* Header */}
       <div style={{ background:`linear-gradient(135deg,${C.red},${C.redDark})`,
-        padding:"24px 24px 32px", textAlign:"center", position:"relative", overflow:"hidden" }}>
-        <div style={{ position:"absolute", top:-20, right:-20, width:120, height:120,
-          borderRadius:"50%", background:"rgba(255,255,255,0.06)" }}/>
-        <div style={{ position:"absolute", bottom:-30, left:-30, width:100, height:100,
-          borderRadius:"50%", background:"rgba(201,168,76,0.1)" }}/>
-        <div style={{ margin:"0 auto 16px" }}>
-          <img src="/logo.png" alt="Pusula Amerika" style={{ height:55, width:"auto", background:"transparent" }}/>
+        padding:"32px 24px 36px", textAlign:"center", position:"relative" }}>
+        <div style={{ margin:"0 auto 12px" }}>
+          <img src="/logo.png" alt="Pusula Amerika" style={{ height:70, width:"auto", background:"transparent" }}/>
         </div>
         <div className="playfair" style={{ fontSize:20, fontWeight:800, color:C.white,
           marginBottom:4 }}>Pusula <span style={{ color:"#C9A84C" }}>Amerika</span></div>
