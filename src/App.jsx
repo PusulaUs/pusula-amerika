@@ -4925,7 +4925,7 @@ useEffect(() => {
         setTab("home");
         return;
       }
-      if (event === "SIGNED_IN" && session?.user) {
+      if (session?.user) {
         setLoggedIn(true);
         await loadUserData(session.user.id, session.user.email);
       }
@@ -4990,21 +4990,10 @@ const [selectedEventFromProfile, setSelectedEventFromProfile] = useState(null);
     ]);
   };
 
-  const handleAuth = async profile => {
-    setUserProfile(p=>({...p,...profile}));
-    setLoggedIn(true);
+  const handleAuth = profile => {
     if (profile.state) setUserState(profile.state);
-    // Kullanıcıya özel verileri yükle
-    if (profile.id) {
-      const { data: myBizArr } = await supabase.from("businesses").select("*").eq("owner_id", profile.id).limit(1);
-      const myBiz = myBizArr?.[0] || null;
-      if (myBiz) setMyBusiness({...myBiz, cat:myBiz.category, desc:myBiz.description,
-        img: categories.find(c=>c.id===myBiz.category)?.icon||"🏢",
-        onaylı: myBiz.featured, rating: myBiz.rating||0, reviews: myBiz.reviews||0, tags: myBiz.tags||[]});
-      const { data: myEvts } = await supabase.from("events").select("*").eq("owner_id", profile.id);
-      setMyEvents(myEvts ? myEvts.map(e=>({...e, cat:e.category, img:"🎉", attendees:0})) : []);
-    }
     setScreen("main");
+    // onAuthStateChange SIGNED_IN eventi otomatik tetiklenip loadUserData'yı çağıracak
   };
 
   // FIX 2: Arama geçmişi temizle düzeltildi
