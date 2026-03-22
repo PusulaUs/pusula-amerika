@@ -5008,13 +5008,18 @@ function AdminPanel({ onBack, pendingBiz }) {
         </div>
         <div style={{ display:"flex", gap:6 }}>
           {[
-            {n:items.length,      l:"İşletme",  icon:"🏢"},
-            {n:pending.length,    l:"Bekleyen", icon:"⏳"},
-            {n:allEvents.length,  l:"Etkinlik", icon:"🎉"},
-            {n:allJobs.length,    l:"İlan",     icon:"💼"},
-            {n:stats.users,       l:"Üye",      icon:"👥"},
+            {n:items.length,      l:"İşletme",  icon:"🏢", tab:"pending"},
+            {n:pending.length,    l:"Bekleyen", icon:"⏳", tab:"pending"},
+            {n:allEvents.length,  l:"Etkinlik", icon:"🎉", tab:"events"},
+            {n:allJobs.length,    l:"İlan",     icon:"💼", tab:"jobs"},
+            {n:stats.users,       l:"Üye",      icon:"👥", tab:null},
           ].map(s=>(
-            <div key={s.l} style={{ flex:1, background:"rgba(255,255,255,0.08)", borderRadius:10, padding:"8px 4px", textAlign:"center" }}>
+            <div key={s.l} onClick={()=>s.tab&&setTab(s.tab)}
+              style={{ flex:1, background: s.tab?"rgba(255,255,255,0.12)":"rgba(255,255,255,0.06)",
+                borderRadius:10, padding:"8px 4px", textAlign:"center",
+                cursor:s.tab?"pointer":"default",
+                border: s.tab?"1px solid rgba(255,255,255,0.15)":"none",
+                transition:"all 0.2s" }}>
               <div style={{ fontSize:11, marginBottom:2 }}>{s.icon}</div>
               <div style={{ fontSize:14, fontWeight:800, color:C.white }}>{s.n}</div>
               <div style={{ fontSize:8, color:"rgba(255,255,255,0.5)", fontWeight:600 }}>{s.l}</div>
