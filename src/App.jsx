@@ -499,6 +499,8 @@ function Home({ userState, userCity, onBusiness, onTab, favorites, toggleFav, on
   const activeState = filterState || userState;
   const filtered = allBusinesses
     .filter(b => {
+      // Sadece onaylı işletmeler göster
+      if (b.status === "rejected") return false;
       if (selCat && b.cat !== selCat) return false;
       const q = search.toLocaleLowerCase("tr");
       if (search && !b.name.toLocaleLowerCase("tr").includes(q) &&
@@ -876,7 +878,7 @@ function Home({ userState, userCity, onBusiness, onTab, favorites, toggleFav, on
 
             {/* Yakınımdaki İşletmeler */}
             {userState && !showAllStates && (() => {
-              const nearby = allBusinesses.filter(b=>b.state===userState).slice(0,6);
+              const nearby = allBusinesses.filter(b=>b.state===userState && b.status!=="rejected").slice(0,6);
               if (!nearby.length) return null;
               return (
                 <div style={{ padding:"18px 18px 0" }}>
@@ -1019,7 +1021,7 @@ function Home({ userState, userCity, onBusiness, onTab, favorites, toggleFav, on
                 </div>
               )}
             </div>
-          ) : (isFiltering ? filtered : businesses).map(b => (
+          ) : (isFiltering ? filtered : allBusinesses.filter(b => b.status === "approved" || b.verified || !b.status)).map(b => (
             <div key={b.id} style={{ background:C.white, border:`1px solid ${C.border}`,
               borderRadius:16, padding:"14px 16px", marginBottom:10,
               display:"flex", gap:14, boxShadow:"0 1px 4px rgba(200,16,46,0.05)" }}>
@@ -5303,7 +5305,7 @@ const [editingEvent, setEditingEvent] = useState(null);
 const [rsvpEvents, setRsvpEvents] = useState([]);
 const [selectedEventFromProfile, setSelectedEventFromProfile] = useState(null);
 
-  const pendingBiz = dbBusinesses.filter(b=>b.status==="pending" || (!b.status && !b.verified));
+  const pendingBiz = dbBusinesses; // Admin tüm işletmeleri görür
 
   const unreadCount = notifications.filter(n=>!n.read).length;
 
