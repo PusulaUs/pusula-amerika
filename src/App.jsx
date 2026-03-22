@@ -724,6 +724,7 @@ function Home({ userState, userCity, onBusiness, onTab, favorites, toggleFav, on
 
       <div style={{ flex:1, overflowY:"auto", paddingBottom:80 }}>
 
+
         {/* Ana sayfa içeriği — filtre/arama yokken */}
         {!isFiltering && (
           <>
@@ -1041,14 +1042,10 @@ function Home({ userState, userCity, onBusiness, onTab, favorites, toggleFav, on
                   <div style={{ fontSize:14, fontWeight:700, color:C.text,
                     flex:1, marginRight:6 }}>{b.name}</div>
                   <div style={{ display:"flex", gap:4, flexShrink:0 }}>
-                    {b.onaylı && (
+                    {(b.verified || b.status==="approved") && (
                       <span style={{ background:"linear-gradient(135deg,#F59E0B,#D97706)",
-                        borderRadius:6, padding:"2px 6px",
-                        fontSize:9, color:C.white, fontWeight:700 }}>✅ONAYLANMIŞ</span>
-                    )}
-                    {b.verified && (
-                      <span style={{ background:"linear-gradient(135deg,#F59E0B,#D97706)", borderRadius:6, padding:"2px 8px",
-                        fontSize:9, color:C.white, fontWeight:700 }}>✅ ONAYLANDI</span>
+                        borderRadius:6, padding:"2px 8px",
+                        fontSize:9, color:C.white, fontWeight:700 }}>✅ Onaylı</span>
                     )}
                   </div>
                 </div>
@@ -1335,11 +1332,18 @@ function Events({ onBack, onPost, dbEvents=[], rsvpList=[], onRsvpChange, initia
   const [rsvp, setRsvp] = useState(rsvpList||[]); // katılınan etkinlik id'leri
 const [selectedEvent, setSelectedEvent] = useState(initialEvent);
 const [photoView, setPhotoView] = useState(null);
-  const toggleRsvp = id => {
-  const newRsvp = rsvp.includes(id) ? rsvp.filter(x=>x!==id) : [...rsvp,id];
-  setRsvp(newRsvp);
-  onRsvpChange && onRsvpChange(newRsvp);
-};
+  const toggleRsvp = async id => {
+    const isJoining = !rsvp.includes(id);
+    const newRsvp = isJoining ? [...rsvp, id] : rsvp.filter(x=>x!==id);
+    setRsvp(newRsvp);
+    onRsvpChange && onRsvpChange(newRsvp);
+    // Supabase'de attendees güncelle
+    try {
+      const { data: ev } = await supabase.from("events").select("attendees").eq("id", id).single();
+      const current = ev?.attendees || 0;
+      await supabase.from("events").update({ attendees: Math.max(0, current + (isJoining ? 1 : -1)) }).eq("id", id);
+    } catch(e) {}
+  };
   const catList = ["Tümü","Ulusal Bayram","Kültür & Sanat","Yemek","Networking","Müzik"];
   const [showAllStates, setShowAllStates] = useState(false);
   const allEvents = [...events, ...dbEvents];
@@ -2225,18 +2229,20 @@ const [tab, setTab] = useState("info"); // info | favs | events
                 <div style={{ fontSize:12, color:C.textMute }}>→</div>
               </div>
             )}
-            {/* İşletme ekle butonu */}
-            <div onClick={onRegisterBiz} style={{ border:`2px dashed #F59E0B`,
-              borderRadius:14, padding:"14px 16px", textAlign:"center",
-              background:"#FFFBEB", cursor:"pointer", marginBottom:12 }}>
-              <div style={{ fontSize:20, marginBottom:6 }}>🏢</div>
-              <div style={{ fontSize:12, fontWeight:700, color:"#92400E", marginBottom:3 }}>
-                İşletmenizi Ekleyin
+            {/* İşletme ekle butonu — sadece işletmesi yoksa göster */}
+            {!myBusiness && (
+              <div onClick={onRegisterBiz} style={{ border:`2px dashed #F59E0B`,
+                borderRadius:14, padding:"14px 16px", textAlign:"center",
+                background:"#FFFBEB", cursor:"pointer", marginBottom:12 }}>
+                <div style={{ fontSize:20, marginBottom:6 }}>🏢</div>
+                <div style={{ fontSize:12, fontWeight:700, color:"#92400E", marginBottom:3 }}>
+                  İşletmenizi Ekleyin
+                </div>
+                <div style={{ fontSize:11, color:"#A16207" }}>
+                  Ücretsiz listelenin, müşteri bulun →
+                </div>
               </div>
-              <div style={{ fontSize:11, color:"#A16207" }}>
-                Ücretsiz listelenin, müşteri bulun →
-              </div>
-            </div>
+            )}
           </>
         )}
 {/* Favoriler */}
@@ -2268,7 +2274,7 @@ const [tab, setTab] = useState("info"); // info | favs | events
         )}
 
         {/* Yorumlar */}
-        {tab==="reviews" && (
+        {tab==="adminreviews" && (
           reviews.filter(r=>r.user_id===userProfile.id||r.user===userProfile.name).length===0 ? (
             <div style={{ textAlign:"center", paddingTop:40 }}>
               <div style={{ fontSize:40, marginBottom:12 }}>💬</div>
@@ -2316,7 +2322,7 @@ const [tab, setTab] = useState("info"); // info | favs | events
           ))
         )}
        {/* Etkinliklerim */}
-        {tab==="events" && (
+        {tab==="adminevents" && (
           <div>
             {myEvents.length > 0 && (
               <>
@@ -2546,9 +2552,7 @@ function BusinessDetail({ business, onBack, favorites, toggleFav, reviews, onAdd
   const [showReviewForm, setShowReviewForm] = useState(false);
   const [starHover, setStarHover] = useState(0);
   const [newReview, setNewReview] = useState({ stars:0, text:"" });
-  const [ownerReplies, setOwnerReplies] = useState({
-    0: "Teşekkürler! Sizi tekrar görmek isteriz 🙏",
-  });
+  const [ownerReplies, setOwnerReplies] = useState({});
   const [replyingTo, setReplyingTo] = useState(null);
   const [replyDraft, setReplyDraft] = useState("");
 
@@ -2733,7 +2737,7 @@ function BusinessDetail({ business, onBack, favorites, toggleFav, reviews, onAdd
 
           {/* Bu işletme sizin mi? Sahiplen */}
          
-          {!isOwner && (
+          {!isOwner && !business.owner_id && (
             <div style={{ background:`linear-gradient(135deg,#FFF8E1,#FFF3CD)`,
               border:"1px solid #FDE68A", borderRadius:13, padding:"12px 14px",
               marginBottom:14, display:"flex", alignItems:"center", gap:10 }}>
@@ -3606,13 +3610,24 @@ const [showPrivacy, setShowPrivacy] = useState(false);
   );
 }
 
-function PostJob({ onBack, onSuccess, userName }) {
-  const [form, setForm] = useState({
+function PostJob({ onBack, onSuccess, userName, editJob=null }) {
+  const [form, setForm] = useState(editJob ? {
+    title: editJob.title || "",
+    company: editJob.company || "",
+    type: editJob.type || "Tam Zamanlı",
+    location: (editJob.location||"").split(",")[0]?.trim() || "",
+    state: editJob.state || "",
+    description: editJob.description || "",
+    tags: (editJob.tags||[]).join(", "),
+    phone: editJob.phone || "",
+    nationwide: editJob.nationwide || false,
+  } : {
     title:"", company:"", type:"Tam Zamanlı", location:"",
     state:"", description:"", tags:"", phone:"", nationwide:false,
   });
   const [submitted, setSubmitted] = useState(false);
   const set = (k,v) => setForm(f=>({...f,[k]:v}));
+  const isEditing = !!editJob;
 
   const canSubmit = form.title && form.company && form.location && form.state;
 
@@ -3776,39 +3791,26 @@ function PostJob({ onBack, onSuccess, userName }) {
         <button onClick={async()=>{ if(!canSubmit) return;
   const { data: { session: _s } } = await supabase.auth.getSession();
   const user = _s?.user;
-  
-  let imageUrl = null;
-  if (form.image) {
-    const ext = form.image.name.split('.').pop();
-    const fileName = `${Date.now()}.${ext}`;
-    const { data: uploadData, error: uploadError } = await supabase.storage
-      .from('events')
-      .upload(fileName, form.image, { contentType: form.image.type });
-    if (uploadData) {
-      const { data: urlData } = supabase.storage
-        .from('events')
-        .getPublicUrl(fileName);
-      imageUrl = urlData.publicUrl;
-    }
-  }
 
-  await supabase.from("events").insert({
+  const jobData = {
     title: form.title,
-    org: form.org,
-    date: form.date,
-    location: form.location,
+    company: form.company,
+    location: `${form.location}, ${form.state}`,
     state: form.state,
-    zip: form.zip,
-    category: form.cat,
+    type: form.type,
+    phone: form.phone,
     description: form.description,
-    free: form.free,
-    price: form.price,
-    image_url: imageUrl,
+    tags: form.tags ? form.tags.split(",").map(t=>t.trim()).filter(Boolean) : [],
     nationwide: form.nationwide || false,
-    owner_id: user?.id || null,
-  });
+  };
+
+  if (isEditing && editJob?.id) {
+    await supabase.from("jobs").update(jobData).eq("id", editJob.id);
+  } else {
+    await supabase.from("jobs").insert({ ...jobData, owner_id: user?.id || null });
+  }
   setSubmitted(true);
-  onSuccess && onSuccess({...form, imageUrl, image_url: imageUrl});
+  onSuccess && onSuccess({...form, ...jobData, id: editJob?.id, owner_id: user?.id});
 }} style={{ width:"100%",
           border:"none", borderRadius:13, padding:"14px", fontSize:14, fontWeight:700,
           cursor:canSubmit?"pointer":"default",
@@ -3816,7 +3818,7 @@ function PostJob({ onBack, onSuccess, userName }) {
             ? `linear-gradient(135deg,${C.red},${C.redDark})`
             : "#D4DCEE",
           color: canSubmit ? C.white : C.textMute }}>
-          💼 İlanı Yayınla
+          💼 {isEditing ? "İlanı Güncelle" : "İlanı Yayınla"}
         </button>
       </div>
     </div>
@@ -4567,7 +4569,7 @@ function NotificationsScreen({ onBack, notifications, onMarkRead, onNavigate }) 
             <div style={{ fontSize:13, color:C.textMute, marginTop:6 }}>İşletme güncellemeleri burada görünecek</div>
           </div>
         ) : notifications.map((n,i)=>(
-          <div key={i} onClick={()=>onNavigate&&onNavigate(n)} style={{ padding:"14px 18px", borderBottom:`1px solid ${C.border}`,
+          <div key={i} onClick={()=>{ onMarkRead && onMarkRead(i); onNavigate && n && onNavigate(n); }} style={{ padding:"14px 18px", borderBottom:`1px solid ${C.border}`,
             background:n.read?C.white:C.redLight, display:"flex", gap:12, alignItems:"flex-start", cursor:"pointer" }}>
             <div style={{ width:42, height:42, borderRadius:12, flexShrink:0,
               background:n.read?`linear-gradient(135deg,${C.redPale},#FFF5F6)`:`linear-gradient(135deg,${C.red},${C.redDark})`,
@@ -4578,6 +4580,7 @@ function NotificationsScreen({ onBack, notifications, onMarkRead, onNavigate }) 
               <div style={{ fontSize:13, fontWeight:n.read?500:700, color:C.text, marginBottom:3, lineHeight:1.4 }}>{n.title}</div>
               <div style={{ fontSize:11, color:C.textMute }}>{n.body}</div>
               <div style={{ fontSize:10, color:C.textMute, marginTop:4 }}>{n.time}</div>
+              {n.link && <div style={{ fontSize:10, color:C.red, fontWeight:700, marginTop:4 }}>Görüntüle →</div>}
             </div>
             {!n.read && <div style={{ width:8, height:8, borderRadius:"50%", background:C.red, flexShrink:0, marginTop:6 }}/>}
           </div>
@@ -4938,40 +4941,122 @@ function ReportModal({ type, onClose }) {
   );
 }
 
-function AdminPanel({ onBack, pendingBiz }) {
-  const [tab, setTab] = useState("pending");
-  const [items, setItems] = useState(pendingBiz);
+function BizSearchSelector({ items, value, onChange, type }) {
+  const [query, setQuery] = useState("");
+  const [open, setOpen] = useState(false);
+  const filtered = items.filter(b =>
+    b.name?.toLowerCase().includes(query.toLowerCase()) ||
+    b.city?.toLowerCase().includes(query.toLowerCase())
+  ).slice(0, 8);
+  const selected = items.find(b => String(b.id) === String(value));
+
+  return (
+    <div style={{ marginBottom:10, position:"relative" }}>
+      <div style={{ fontSize:11, fontWeight:700, color:C.textSub, marginBottom:6 }}>
+        Firma Bağlantısı <span style={{ color:C.textMute, fontWeight:400 }}>(opsiyonel)</span>
+      </div>
+      {selected ? (
+        <div style={{ display:"flex", alignItems:"center", gap:8, padding:"9px 12px",
+          borderRadius:10, border:`1.5px solid ${C.red}`, background:C.redLight, marginBottom:6 }}>
+          <span style={{ flex:1, fontSize:12, fontWeight:600, color:C.red }}>{selected.name} — {selected.city}</span>
+          <span onClick={()=>{ onChange(""); setQuery(""); }} style={{ cursor:"pointer", color:C.red, fontSize:14 }}>✕</span>
+        </div>
+      ) : (
+        <input value={query} onChange={e=>{ setQuery(e.target.value); setOpen(true); }}
+          onFocus={()=>setOpen(true)}
+          placeholder="Firma ara..."
+          style={{ width:"100%", boxSizing:"border-box", padding:"9px 12px", borderRadius:10,
+            border:`1.5px solid ${C.border}`, background:C.redPale, fontSize:12, outline:"none" }}/>
+      )}
+      {open && query && filtered.length > 0 && !selected && (
+        <div style={{ position:"absolute", top:"100%", left:0, right:0, background:C.white,
+          border:`1px solid ${C.border}`, borderRadius:10, boxShadow:"0 4px 12px rgba(0,0,0,0.1)",
+          zIndex:100, maxHeight:200, overflowY:"auto" }}>
+          {filtered.map(b=>(
+            <div key={b.id} onClick={()=>{ onChange(String(b.id)); setQuery(""); setOpen(false); }}
+              style={{ padding:"10px 14px", cursor:"pointer", fontSize:12,
+                borderBottom:`1px solid ${C.border}`, color:C.text }}>
+              <div style={{ fontWeight:700 }}>{b.name}</div>
+              <div style={{ color:C.textMute, fontSize:11 }}>📍 {b.city}, {b.state}</div>
+            </div>
+          ))}
+        </div>
+      )}
+    </div>
+  );
+}
+
+function AdminPanel({ onBack }) {
+  const [tab, setTab] = useState("bizpending");
+  const [items, setItems] = useState([]);
   const [removeReqs, setRemoveReqs] = useState([]);
   const [allEvents, setAllEvents] = useState([]);
   const [allJobs, setAllJobs] = useState([]);
   const [stats, setStats] = useState({ users:0 });
+  const [loading, setLoading] = useState(true);
+  const [allReviews, setAllReviews] = useState([]);
+  const [allProfiles, setAllProfiles] = useState([]);
+  const [announcements, setAnnouncements] = useState([]);
+  const [newAnnouncement, setNewAnnouncement] = useState("");
+  const [announcementType, setAnnouncementType] = useState("general");
+  const [announcementLink, setAnnouncementLink] = useState("");
+  const [editingBiz, setEditingBiz] = useState(null);
+  const [editingEventAdmin, setEditingEventAdmin] = useState(null);
+  const [editingJobAdmin, setEditingJobAdmin] = useState(null);
+  const [notification, setNotification] = useState("");
 
   useEffect(() => {
     const load = async () => {
-      const { data: rems } = await supabase.from("removal_requests").select("*");
+      setLoading(true);
+      const [{ data: bizArr }, { data: rems }, { data: evts }, { data: jobs }, { data: revs }, { data: profs }, { data: anns }] = await Promise.all([
+        supabase.from("businesses").select("*").order("created_at", { ascending:false }),
+        supabase.from("removal_requests").select("*"),
+        supabase.from("events").select("*").order("created_at", { ascending:false }),
+        supabase.from("jobs").select("*").order("created_at", { ascending:false }),
+        supabase.from("reviews").select("*").order("created_at", { ascending:false }),
+        supabase.from("profiles").select("*").order("created_at", { ascending:false }),
+        supabase.from("announcements").select("*").order("created_at", { ascending:false }),
+      ]);
+      if (bizArr) setItems(bizArr);
       if (rems) setRemoveReqs(rems.map(r=>({ id:r.id, bizId:r.business_id, name:r.business_name, reason:r.reason, date:new Date(r.created_at).toLocaleDateString("tr-TR") })));
-      const { data: evts } = await supabase.from("events").select("*").order("created_at", { ascending:false });
       if (evts) setAllEvents(evts);
-      const { data: jobs } = await supabase.from("jobs").select("*").order("created_at", { ascending:false });
       if (jobs) setAllJobs(jobs);
-      const { count } = await supabase.from("profiles").select("*", { count:"exact", head:true });
-      if (count) setStats({ users: count });
+      if (revs) setAllReviews(revs);
+      if (profs) { setAllProfiles(profs); setStats({ users: profs.length }); }
+      if (anns) setAnnouncements(anns);
+      if (!profs) {
+        const { count } = await supabase.from("profiles").select("*", { count:"exact", head:true });
+        if (count) setStats({ users: count });
+      }
+      setLoading(false);
     };
     load();
   }, []);
 
   const approve = async id => {
-    await supabase.from("businesses").update({ verified:true, status:"approved" }).eq("id", id);
-    setItems(p=>p.map(x=>x.id===id?{...x,status:"approved",verified:true}:x));
+    await supabase.from("businesses").update({ verified:true, featured:true, status:"approved" }).eq("id", id);
+    setItems(p=>p.map(x=>x.id===id?{...x,status:"approved",verified:true,featured:true}:x));
   };
   const reject = async id => {
-    await supabase.from("businesses").update({ verified:false, status:"rejected" }).eq("id", id);
-    setItems(p=>p.map(x=>x.id===id?{...x,status:"rejected",verified:false}:x));
+    await supabase.from("businesses").update({ verified:false, featured:false, status:"rejected" }).eq("id", id);
+    setItems(p=>p.map(x=>x.id===id?{...x,status:"rejected",verified:false,featured:false}:x));
+  };
+  const setPending = async id => {
+    await supabase.from("businesses").update({ verified:false, status:"pending" }).eq("id", id);
+    setItems(p=>p.map(x=>x.id===id?{...x,status:"pending",verified:false}:x));
+  };
+  const toggleFeatured = async (id, current) => {
+    await supabase.from("businesses").update({ featured: !current }).eq("id", id);
+    setItems(p=>p.map(x=>x.id===id?{...x,featured:!current}:x));
   };
   const deleteBiz = async id => {
     if (!window.confirm("Bu işletmeyi silmek istediğinizden emin misiniz?")) return;
     await supabase.from("businesses").delete().eq("id", id);
     setItems(p=>p.filter(x=>x.id!==id));
+  };
+  const deleteProfile = async id => {
+    if (!window.confirm("Bu kullanıcıyı silmek istediğinizden emin misiniz?")) return;
+    await supabase.from("profiles").delete().eq("id", id);
   };
   const removeApprove = async (reqId, bizId) => {
     await supabase.from("businesses").delete().eq("id", bizId);
@@ -4989,10 +5074,67 @@ function AdminPanel({ onBack, pendingBiz }) {
     await supabase.from("jobs").delete().eq("id", id);
     setAllJobs(p=>p.filter(x=>x.id!==id));
   };
+  const deleteReview = async id => {
+    if (!window.confirm("Bu yorumu silmek istediğinizden emin misiniz?")) return;
+    await supabase.from("reviews").delete().eq("id", id);
+    setAllReviews(p=>p.filter(x=>x.id!==id));
+  };
+  const saveAnnouncement = async () => {
+    if (!newAnnouncement.trim()) return;
+    const { data } = await supabase.from("announcements").insert({
+      text: newAnnouncement, active: true,
+      type: announcementType,
+      link: announcementLink || null,
+    }).select().single();
+    if (data) setAnnouncements(p=>[data,...p]);
+    setNewAnnouncement("");
+    setAnnouncementLink("");
+  };
+  const deleteAnnouncement = async id => {
+    await supabase.from("announcements").delete().eq("id", id);
+    setAnnouncements(p=>p.filter(x=>x.id!==id));
+  };
+  const toggleAnnouncement = async (id, current) => {
+    await supabase.from("announcements").update({ active: !current }).eq("id", id);
+    setAnnouncements(p=>p.map(x=>x.id===id?{...x,active:!current}:x));
+  };
+  const saveBizEdit = async (biz) => {
+    await supabase.from("businesses").update({
+      name: biz.name, phone: biz.phone, description: biz.description || biz.desc,
+      address: biz.address, city: biz.city, state: biz.state,
+    }).eq("id", biz.id);
+    setItems(p=>p.map(x=>x.id===biz.id?{...x,...biz}:x));
+    setEditingBiz(null);
+  };
+  const saveEventEdit = async (ev) => {
+    await supabase.from("events").update({
+      title: ev.title, org: ev.org, date: ev.date,
+      location: ev.location, description: ev.description,
+    }).eq("id", ev.id);
+    setAllEvents(p=>p.map(x=>x.id===ev.id?{...x,...ev}:x));
+    setEditingEventAdmin(null);
+  };
+  const saveJobEdit = async (job) => {
+    await supabase.from("jobs").update({
+      title: job.title, company: job.company, description: job.description,
+      phone: job.phone, location: job.location,
+    }).eq("id", job.id);
+    setAllJobs(p=>p.map(x=>x.id===job.id?{...x,...job}:x));
+    setEditingJobAdmin(null);
+  };
 
-  const pending  = items.filter(x=>!x.status && x.verified!==true);
+  const pending  = items.filter(x=>x.status==="pending" || (!x.status && x.verified!==true));
   const approved = items.filter(x=>x.status==="approved" || x.verified===true);
   const rejected = items.filter(x=>x.status==="rejected");
+
+  if (loading) return (
+    <div style={{ height:"100vh", display:"flex", alignItems:"center", justifyContent:"center", background:C.bgSoft }}>
+      <div style={{ textAlign:"center" }}>
+        <div style={{ fontSize:32, marginBottom:12 }}>⏳</div>
+        <div style={{ fontSize:14, color:C.textMute }}>Veriler yükleniyor...</div>
+      </div>
+    </div>
+  );
 
   return (
     <div style={{ height:"100vh", display:"flex", flexDirection:"column", background:C.bgSoft }}>
@@ -5008,10 +5150,10 @@ function AdminPanel({ onBack, pendingBiz }) {
         </div>
         <div style={{ display:"flex", gap:6 }}>
           {[
-            {n:items.length,      l:"İşletme",  icon:"🏢", tab:"pending"},
-            {n:pending.length,    l:"Bekleyen", icon:"⏳", tab:"pending"},
-            {n:allEvents.length,  l:"Etkinlik", icon:"🎉", tab:"events"},
-            {n:allJobs.length,    l:"İlan",     icon:"💼", tab:"jobs"},
+            {n:items.length,      l:"İşletme",  icon:"🏢", tab:"bizpending"},
+            {n:pending.length,    l:"Bekleyen", icon:"⏳", tab:"bizpending"},
+            {n:allEvents.length,  l:"Etkinlik", icon:"🎉", tab:"adminevents"},
+            {n:allJobs.length,    l:"İlan",     icon:"💼", tab:"adminjobs"},
             {n:stats.users,       l:"Üye",      icon:"👥", tab:null},
           ].map(s=>(
             <div key={s.l} onClick={()=>s.tab&&setTab(s.tab)}
@@ -5031,12 +5173,14 @@ function AdminPanel({ onBack, pendingBiz }) {
       {/* Tabs */}
       <div style={{ background:C.white, borderBottom:`1px solid ${C.border}`, display:"flex", overflowX:"auto" }}>
         {[
-          {id:"pending",  label:`⏳ Bekleyen (${pending.length})`},
-          {id:"approved", label:`✅ Onaylı (${approved.length})`},
-          {id:"rejected", label:`❌ Reddedilen (${rejected.length})`},
-          {id:"events",   label:`🎉 Etkinlikler (${allEvents.length})`},
-          {id:"jobs",     label:`💼 İlanlar (${allJobs.length})`},
-          {id:"remove",   label:`🗑️ Kaldırma (${removeReqs.length})`},
+          {id:"bizpending",  label:`⏳ Bekleyen (${pending.length})`},
+          {id:"bizapproved", label:`✅ Onaylı (${approved.length})`},
+          {id:"bizrejected", label:`❌ Reddedilen (${rejected.length})`},
+          {id:"adminevents",   label:`🎉 Etkinlikler (${allEvents.length})`},
+          {id:"adminjobs",     label:`💼 İlanlar (${allJobs.length})`},
+          {id:"adminreviews",  label:`💬 Yorumlar (${allReviews.length})`},
+          {id:"adminannounce", label:`📢 Duyurular (${announcements.length})`},
+          {id:"adminremove",   label:`🗑️ Kaldırma (${removeReqs.length})`},
         ].map(t=>(
           <div key={t.id} onClick={()=>setTab(t.id)} style={{ flexShrink:0,
             padding:"11px 10px", textAlign:"center", fontSize:10, fontWeight:700,
@@ -5051,7 +5195,7 @@ function AdminPanel({ onBack, pendingBiz }) {
       <div style={{ flex:1, overflowY:"auto", padding:"14px 18px" }}>
 
         {/* Kaldırma talepleri */}
-        {tab==="remove" && (removeReqs.length===0 ? (
+        {tab==="adminremove" && (removeReqs.length===0 ? (
           <div style={{ textAlign:"center", padding:"40px 0" }}>
             <div style={{ fontSize:36, marginBottom:10 }}>✅</div>
             <div style={{ fontSize:13, color:C.textMute }}>Bekleyen kaldırma talebi yok</div>
@@ -5068,43 +5212,170 @@ function AdminPanel({ onBack, pendingBiz }) {
           </div>
         )))}
 
+        {/* Duyurular */}
+        {tab==="adminannounce" && (
+          <>
+            <div style={{ background:C.white, border:`1px solid ${C.border}`, borderRadius:16, padding:"14px 16px", marginBottom:14 }}>
+              <div style={{ fontSize:11, fontWeight:700, color:C.textMute, letterSpacing:1.5, textTransform:"uppercase", marginBottom:10 }}>YENİ BİLDİRİM</div>
+              <textarea value={newAnnouncement} onChange={e=>setNewAnnouncement(e.target.value)}
+                placeholder="Bildirim metni..." rows={3}
+                style={{ width:"100%", boxSizing:"border-box", padding:"10px 12px", borderRadius:10,
+                  border:`1.5px solid ${C.border}`, background:C.redPale, fontSize:13,
+                  outline:"none", resize:"vertical", fontFamily:"system-ui", marginBottom:10 }}/>
+              <div style={{ marginBottom:10 }}>
+                <div style={{ fontSize:11, fontWeight:700, color:C.textSub, marginBottom:6 }}>Hedef</div>
+                <div style={{ display:"flex", gap:6, flexWrap:"wrap" }}>
+                  {[{v:"general",l:"📢 Genel"},{v:"jobs",l:"💼 İş İlanları"},{v:"events",l:"🎉 Etkinlikler"},{v:"business",l:"🏢 İşletmeler"}].map(opt=>(
+                    <div key={opt.v} onClick={()=>setAnnouncementType(opt.v)}
+                      style={{ padding:"6px 12px", borderRadius:8, fontSize:11, fontWeight:700, cursor:"pointer",
+                        background: announcementType===opt.v ? C.red : C.redPale,
+                        border:`1px solid ${announcementType===opt.v ? C.red : C.border}`,
+                        color: announcementType===opt.v ? C.white : C.textSub }}>
+                      {opt.l}
+                    </div>
+                  ))}
+                </div>
+              </div>
+              {/* Firma bağlantısı — tüm tipler için opsiyonel */}
+              <BizSearchSelector
+                items={items}
+                value={announcementLink}
+                onChange={setAnnouncementLink}
+                type={announcementType}
+              />
+              <button onClick={saveAnnouncement} style={{ width:"100%", border:"none", borderRadius:10,
+                padding:"10px", fontSize:13, fontWeight:700, cursor:"pointer",
+                background:`linear-gradient(135deg,${C.red},${C.redDark})`, color:C.white }}>
+                📢 Bildirimi Gönder
+              </button>
+            </div>
+            {announcements.map(a=>(
+              <div key={a.id} style={{ background:C.white, border:`1px solid ${C.border}`,
+                borderRadius:14, padding:"13px 16px", marginBottom:10 }}>
+                <div style={{ fontSize:13, color:C.text, marginBottom:8, lineHeight:1.5 }}>{a.text}</div>
+                <div style={{ fontSize:10, color:C.textMute, marginBottom:10 }}>
+                  {new Date(a.created_at).toLocaleDateString("tr-TR")} · {a.active ? "🟢 Aktif" : "🔴 Pasif"}
+                  {a.type && a.type !== "general" && <span> · 🎯 {a.type}</span>}
+                  {a.link && <span> · 🔗 {a.link}</span>}
+                </div>
+                <div style={{ display:"flex", gap:8 }}>
+                  <button onClick={()=>toggleAnnouncement(a.id, a.active)}
+                    style={{ flex:1, border:"none", borderRadius:9, padding:"8px", fontSize:11,
+                      fontWeight:700, cursor:"pointer",
+                      background: a.active?"#FEF3C7":"#D1FAE5",
+                      color: a.active?"#92400E":"#065F46" }}>
+                    {a.active ? "⏸ Duraklat" : "▶ Aktifleştir"}
+                  </button>
+                  <button onClick={()=>deleteAnnouncement(a.id)}
+                    style={{ flex:1, border:"none", borderRadius:9, padding:"8px", fontSize:11,
+                      fontWeight:700, cursor:"pointer", background:"#FEE2E2", color:"#991B1B" }}>
+                    🗑️ Sil
+                  </button>
+                </div>
+              </div>
+            ))}
+          </>
+        )}
+
+        {/* Yorumlar */}
+        {tab==="adminreviews" && (allReviews.length===0 ? (
+          <div style={{ textAlign:"center", padding:"40px 0", fontSize:13, color:C.textMute }}>Yorum yok</div>
+        ) : allReviews.map(r=>(
+          <div key={r.id} style={{ background:C.white, border:`1px solid ${C.border}`, borderRadius:14, padding:"13px 16px", marginBottom:10 }}>
+            <div style={{ display:"flex", justifyContent:"space-between", alignItems:"flex-start", marginBottom:6 }}>
+              <div style={{ flex:1 }}>
+                <div style={{ fontSize:11, color:C.textMute, marginBottom:2 }}>
+                  🏢 {items.find(b=>b.id===r.business_id)?.name || "İşletme"}
+                </div>
+                <div style={{ fontSize:12, fontWeight:700, color:C.text }}>{r.user_name}</div>
+                <div style={{ fontSize:10, color:C.textMute }}>{"★".repeat(r.rating||0)}{"☆".repeat(5-(r.rating||0))} · {new Date(r.created_at).toLocaleDateString("tr-TR")}</div>
+              </div>
+              <button onClick={()=>deleteReview(r.id)} style={{ border:"none", borderRadius:8, padding:"5px 10px",
+                fontSize:10, fontWeight:700, cursor:"pointer", background:"#FEE2E2", color:"#991B1B", flexShrink:0 }}>🗑️</button>
+            </div>
+            {r.comment && <div style={{ fontSize:12, color:C.textSub, lineHeight:1.5, marginTop:4 }}>{r.comment}</div>}
+          </div>
+        )))}
+
         {/* Etkinlikler */}
-        {tab==="events" && (allEvents.length===0 ? (
+        {tab==="adminevents" && (allEvents.length===0 ? (
           <div style={{ textAlign:"center", padding:"40px 0", fontSize:13, color:C.textMute }}>Etkinlik yok</div>
         ) : allEvents.map(ev=>(
           <div key={ev.id} style={{ background:C.white, border:`1px solid ${C.border}`, borderRadius:16, padding:"14px 16px", marginBottom:10 }}>
-            <div style={{ display:"flex", justifyContent:"space-between", alignItems:"flex-start", marginBottom:6 }}>
-              <div style={{ flex:1 }}>
-                <div style={{ fontSize:13, fontWeight:700, color:C.text, marginBottom:3 }}>{ev.title}</div>
-                <div style={{ fontSize:11, color:C.textMute, marginBottom:2 }}>📍 {ev.location} · {ev.state}</div>
-                <div style={{ fontSize:11, color:C.textMute }}>📅 {ev.date} · {ev.org}</div>
+            {editingEventAdmin?.id === ev.id ? (
+              <div>
+                {["title","org","date","location","description"].map(k=>(
+                  <input key={k} value={editingEventAdmin[k]||""} onChange={e=>setEditingEventAdmin(p=>({...p,[k]:e.target.value}))}
+                    placeholder={k} style={{ width:"100%", boxSizing:"border-box", padding:"8px 10px", borderRadius:8,
+                      border:`1px solid ${C.border}`, background:C.redPale, fontSize:12, marginBottom:6, outline:"none" }}/>
+                ))}
+                <div style={{ display:"flex", gap:8 }}>
+                  <button onClick={()=>saveEventEdit(editingEventAdmin)} style={{ flex:1, border:"none", borderRadius:9, padding:"8px", fontSize:11, fontWeight:700, cursor:"pointer", background:"#D1FAE5", color:"#065F46" }}>💾 Kaydet</button>
+                  <button onClick={()=>setEditingEventAdmin(null)} style={{ flex:1, border:"none", borderRadius:9, padding:"8px", fontSize:11, fontWeight:700, cursor:"pointer", background:C.redPale, color:C.textSub }}>İptal</button>
+                </div>
               </div>
-              {ev.image_url && <img src={ev.image_url} alt="" style={{ width:48, height:48, borderRadius:10, objectFit:"cover", flexShrink:0, marginLeft:10 }}/>}
-            </div>
-            <button onClick={()=>deleteEvent(ev.id)} style={{ width:"100%", border:"none", borderRadius:10, padding:"9px", fontSize:12, fontWeight:700, cursor:"pointer", background:"#FEE2E2", color:"#991B1B", marginTop:6 }}>🗑️ Etkinliği Sil</button>
+            ) : (
+              <>
+                <div style={{ display:"flex", justifyContent:"space-between", alignItems:"flex-start", marginBottom:6 }}>
+                  <div style={{ flex:1 }}>
+                    <div style={{ fontSize:13, fontWeight:700, color:C.text, marginBottom:3 }}>{ev.title}</div>
+                    <div style={{ fontSize:11, color:C.textMute, marginBottom:2 }}>📍 {ev.location} · {ev.state}</div>
+                    <div style={{ fontSize:11, color:C.textMute }}>📅 {ev.date} · {ev.org}</div>
+                  </div>
+                  {ev.image_url && <img src={ev.image_url} alt="" style={{ width:48, height:48, borderRadius:10, objectFit:"cover", flexShrink:0, marginLeft:10 }}/>}
+                </div>
+                <div style={{ display:"flex", gap:8 }}>
+                  <button onClick={()=>setEditingEventAdmin({...ev})} style={{ flex:1, border:"none", borderRadius:9, padding:"8px", fontSize:11, fontWeight:700, cursor:"pointer", background:"#EFF6FF", color:"#1D4ED8" }}>✏️ Düzenle</button>
+                  <button onClick={()=>deleteEvent(ev.id)} style={{ flex:1, border:"none", borderRadius:9, padding:"8px", fontSize:11, fontWeight:700, cursor:"pointer", background:"#FEE2E2", color:"#991B1B" }}>🗑️ Sil</button>
+                </div>
+              </>
+            )}
           </div>
         )))}
 
         {/* İş İlanları */}
-        {tab==="jobs" && (allJobs.length===0 ? (
+        {tab==="adminjobs" && (allJobs.length===0 ? (
           <div style={{ textAlign:"center", padding:"40px 0", fontSize:13, color:C.textMute }}>İlan yok</div>
         ) : allJobs.map(job=>(
           <div key={job.id} style={{ background:C.white, border:`1px solid ${C.border}`, borderRadius:16, padding:"14px 16px", marginBottom:10 }}>
-            <div style={{ fontSize:13, fontWeight:700, color:C.text, marginBottom:3 }}>{job.title}</div>
-            <div style={{ fontSize:11, color:C.textMute, marginBottom:2 }}>🏢 {job.company} · 📍 {job.city}, {job.state}</div>
-            <div style={{ fontSize:11, color:C.textMute, marginBottom:8 }}>💰 {job.salary} · 📅 {new Date(job.created_at).toLocaleDateString("tr-TR")}</div>
-            <button onClick={()=>deleteJob(job.id)} style={{ width:"100%", border:"none", borderRadius:10, padding:"9px", fontSize:12, fontWeight:700, cursor:"pointer", background:"#FEE2E2", color:"#991B1B" }}>🗑️ İlanı Sil</button>
+            {editingJobAdmin?.id === job.id ? (
+              <div>
+                {["title","company","location","description","phone"].map(k=>(
+                  k === "description"
+                    ? <textarea key={k} value={editingJobAdmin[k]||""} onChange={e=>setEditingJobAdmin(p=>({...p,[k]:e.target.value}))}
+                        placeholder={k} rows={3} style={{ width:"100%", boxSizing:"border-box", padding:"8px 10px", borderRadius:8,
+                          border:`1px solid ${C.border}`, background:C.redPale, fontSize:12, marginBottom:6, outline:"none", resize:"vertical" }}/>
+                    : <input key={k} value={editingJobAdmin[k]||""} onChange={e=>setEditingJobAdmin(p=>({...p,[k]:e.target.value}))}
+                        placeholder={k} style={{ width:"100%", boxSizing:"border-box", padding:"8px 10px", borderRadius:8,
+                          border:`1px solid ${C.border}`, background:C.redPale, fontSize:12, marginBottom:6, outline:"none" }}/>
+                ))}
+                <div style={{ display:"flex", gap:8 }}>
+                  <button onClick={()=>saveJobEdit(editingJobAdmin)} style={{ flex:1, border:"none", borderRadius:9, padding:"8px", fontSize:11, fontWeight:700, cursor:"pointer", background:"#D1FAE5", color:"#065F46" }}>💾 Kaydet</button>
+                  <button onClick={()=>setEditingJobAdmin(null)} style={{ flex:1, border:"none", borderRadius:9, padding:"8px", fontSize:11, fontWeight:700, cursor:"pointer", background:C.redPale, color:C.textSub }}>İptal</button>
+                </div>
+              </div>
+            ) : (
+              <>
+                <div style={{ fontSize:13, fontWeight:700, color:C.text, marginBottom:3 }}>{job.title}</div>
+                <div style={{ fontSize:11, color:C.textMute, marginBottom:2 }}>🏢 {job.company} · 📍 {job.location}</div>
+                <div style={{ fontSize:11, color:C.textMute, marginBottom:8 }}>📅 {new Date(job.created_at).toLocaleDateString("tr-TR")}</div>
+                <div style={{ display:"flex", gap:8 }}>
+                  <button onClick={()=>setEditingJobAdmin({...job})} style={{ flex:1, border:"none", borderRadius:9, padding:"8px", fontSize:11, fontWeight:700, cursor:"pointer", background:"#EFF6FF", color:"#1D4ED8" }}>✏️ Düzenle</button>
+                  <button onClick={()=>deleteJob(job.id)} style={{ flex:1, border:"none", borderRadius:9, padding:"8px", fontSize:11, fontWeight:700, cursor:"pointer", background:"#FEE2E2", color:"#991B1B" }}>🗑️ Sil</button>
+                </div>
+              </>
+            )}
           </div>
         )))}
 
         {/* İşletmeler (pending/approved/rejected) */}
-        {["pending","approved","rejected"].includes(tab) && (
-          (tab==="pending"?pending:tab==="approved"?approved:rejected).length===0 ? (
+        {["bizpending","bizapproved","bizrejected"].includes(tab) && (
+          (tab==="bizpending"?pending:tab==="bizapproved"?approved:rejected).length===0 ? (
             <div style={{ textAlign:"center", padding:"40px 0" }}>
-              <div style={{ fontSize:36, marginBottom:10 }}>{tab==="pending"?"⏳":tab==="approved"?"✅":"❌"}</div>
+              <div style={{ fontSize:36, marginBottom:10 }}>{tab==="bizpending"?"⏳":tab==="bizapproved"?"✅":"❌"}</div>
               <div style={{ fontSize:13, color:C.textMute }}>Bu listede kayıt yok</div>
             </div>
-          ) : (tab==="pending"?pending:tab==="approved"?approved:rejected).map(biz=>(
+          ) : (tab==="bizpending"?pending:tab==="bizapproved"?approved:rejected).map(biz=>(
             <div key={biz.id} style={{ background:C.white, border:`1px solid ${C.border}`, borderRadius:16, padding:"14px 16px", marginBottom:10, boxShadow:"0 1px 4px rgba(0,0,0,0.05)" }}>
               <div style={{ display:"flex", gap:12, alignItems:"flex-start", marginBottom:10 }}>
                 {biz.image_url
@@ -5122,15 +5393,43 @@ function AdminPanel({ onBack, pendingBiz }) {
                   </span>
                 )}
               </div>
-              <div style={{ fontSize:12, color:C.textSub, lineHeight:1.5, background:C.redPale, borderRadius:10, padding:"9px 12px", marginBottom:10 }}>
-                {biz.desc||biz.description||"Açıklama yok"}
-              </div>
-              <div style={{ display:"flex", gap:8 }}>
-                {!biz.status && <>
-                  <button onClick={()=>approve(biz.id)} style={{ flex:1, border:"none", borderRadius:10, padding:"10px", fontSize:12, fontWeight:700, cursor:"pointer", background:"#D1FAE5", color:"#065F46" }}>✅ Onayla</button>
-                  <button onClick={()=>reject(biz.id)} style={{ flex:1, border:"none", borderRadius:10, padding:"10px", fontSize:12, fontWeight:700, cursor:"pointer", background:"#FEE2E2", color:"#991B1B" }}>❌ Reddet</button>
-                </>}
-                <button onClick={()=>deleteBiz(biz.id)} style={{ flex:biz.status?2:1, border:"none", borderRadius:10, padding:"10px", fontSize:12, fontWeight:700, cursor:"pointer", background:"#1E293B", color:C.white }}>🗑️ Sil</button>
+              {editingBiz?.id === biz.id ? (
+                <div style={{ marginBottom:10 }}>
+                  {[{k:"name",p:"İşletme Adı"},{k:"phone",p:"Telefon"},{k:"city",p:"Şehir"},{k:"address",p:"Adres"}].map(({k,p})=>(
+                    <input key={k} value={editingBiz[k]||""} onChange={e=>setEditingBiz(prev=>({...prev,[k]:e.target.value}))}
+                      placeholder={p} style={{ width:"100%", boxSizing:"border-box", padding:"8px 10px", borderRadius:8,
+                        border:`1px solid ${C.border}`, background:C.redPale, fontSize:12, marginBottom:6, outline:"none" }}/>
+                  ))}
+                  <textarea value={editingBiz.description||editingBiz.desc||""} onChange={e=>setEditingBiz(prev=>({...prev,description:e.target.value,desc:e.target.value}))}
+                    placeholder="Açıklama" rows={2} style={{ width:"100%", boxSizing:"border-box", padding:"8px 10px", borderRadius:8,
+                      border:`1px solid ${C.border}`, background:C.redPale, fontSize:12, marginBottom:6, outline:"none", resize:"vertical" }}/>
+                  <div style={{ display:"flex", gap:8 }}>
+                    <button onClick={()=>saveBizEdit(editingBiz)} style={{ flex:1, border:"none", borderRadius:9, padding:"8px", fontSize:11, fontWeight:700, cursor:"pointer", background:"#D1FAE5", color:"#065F46" }}>💾 Kaydet</button>
+                    <button onClick={()=>setEditingBiz(null)} style={{ flex:1, border:"none", borderRadius:9, padding:"8px", fontSize:11, fontWeight:700, cursor:"pointer", background:C.redPale, color:C.textSub }}>İptal</button>
+                  </div>
+                </div>
+              ) : (
+                <div style={{ fontSize:12, color:C.textSub, lineHeight:1.5, background:C.redPale, borderRadius:10, padding:"9px 12px", marginBottom:10 }}>
+                  {biz.desc||biz.description||"Açıklama yok"}
+                </div>
+              )}
+              <div style={{ display:"flex", gap:6, flexWrap:"wrap" }}>
+                {editingBiz?.id !== biz.id && (
+                  <button onClick={()=>setEditingBiz({...biz})} style={{ flex:1, minWidth:70, border:"none", borderRadius:10, padding:"9px", fontSize:11, fontWeight:700, cursor:"pointer", background:"#EFF6FF", color:"#1D4ED8" }}>✏️ Düzenle</button>
+                )}
+                {biz.status !== "approved" && (
+                  <button onClick={()=>approve(biz.id)} style={{ flex:1, minWidth:70, border:"none", borderRadius:10, padding:"9px", fontSize:11, fontWeight:700, cursor:"pointer", background:"#D1FAE5", color:"#065F46" }}>✅ Onayla</button>
+                )}
+                {biz.status !== "rejected" && (
+                  <button onClick={()=>reject(biz.id)} style={{ flex:1, minWidth:70, border:"none", borderRadius:10, padding:"9px", fontSize:11, fontWeight:700, cursor:"pointer", background:"#FEE2E2", color:"#991B1B" }}>❌ Reddet</button>
+                )}
+                {biz.status !== "pending" && (
+                  <button onClick={()=>setPending(biz.id)} style={{ flex:1, minWidth:70, border:"none", borderRadius:10, padding:"9px", fontSize:11, fontWeight:700, cursor:"pointer", background:"#FEF3C7", color:"#92400E" }}>⏳ Beklet</button>
+                )}
+                <button onClick={()=>toggleFeatured(biz.id, biz.featured)} style={{ flex:1, minWidth:70, border:"none", borderRadius:10, padding:"9px", fontSize:11, fontWeight:700, cursor:"pointer", background: biz.featured?"#FDE68A":"#F1F5F9", color: biz.featured?"#92400E":"#64748B" }}>
+                  {biz.featured ? "⭐ Öne Çıkan" : "☆ Öne Çıkar"}
+                </button>
+                <button onClick={()=>deleteBiz(biz.id)} style={{ flex:1, minWidth:70, border:"none", borderRadius:10, padding:"9px", fontSize:11, fontWeight:700, cursor:"pointer", background:"#1E293B", color:C.white }}>🗑️ Sil</button>
               </div>
             </div>
           ))
@@ -5171,12 +5470,14 @@ export default function PusulaApp() {
 useEffect(() => {
     // Genel verileri çek
     const fetchPublic = async () => {
-      const [{ data: biz }, { data: job }, { data: evt }, { data: rev }] = await Promise.all([
+      const [{ data: biz }, { data: job }, { data: evt }, { data: rev }, { data: anns }] = await Promise.all([
         supabase.from("businesses").select("*"),
         supabase.from("jobs").select("*"),
         supabase.from("events").select("*"),
         supabase.from("reviews").select("*"),
+        supabase.from("announcements").select("*").eq("active", true).order("created_at", { ascending:false }),
       ]);
+
       if (biz) setDbBusinesses(biz.map(b=>({
         ...b, cat: b.category, desc: b.description,
         img: categories.find(c=>c.id===b.category)?.icon || "🏢",
@@ -5203,6 +5504,24 @@ useEffect(() => {
         avatar: r.user_avatar || "👤",
         date: new Date(r.created_at).toLocaleDateString("tr-TR"),
       })));
+      if (anns && anns.length > 0) {
+        setNotifications(prev => {
+          const existingIds = new Set(prev.filter(n=>n.annId).map(n=>n.annId));
+          const newAnns = anns
+            .filter(a => !existingIds.has(a.id))
+            .map(a => ({
+              icon: a.type==="jobs"?"💼":a.type==="events"?"🎉":a.type==="business"?"🏢":"📢",
+              title: a.text,
+              body: a.biz_id ? "İşletmeyi görüntülemek için tıklayın →" : "",
+              time: new Date(a.created_at).toLocaleDateString("tr-TR"),
+              read: false,
+              link: a.link || (a.type !== "business" ? a.type : null),
+              bizId: (a.type === "business" && a.link) ? a.link : null,
+              annId: a.id,
+            }));
+          return [...newAnns, ...prev];
+        });
+      }
     };
     fetchPublic();
 
@@ -5306,8 +5625,14 @@ useEffect(() => {
 
 
 const signupInProgress = useRef(false);
+  const [editingJob, setEditingJob] = useState(null);
 const [editingEvent, setEditingEvent] = useState(null);
-const [rsvpEvents, setRsvpEvents] = useState([]);
+const [rsvpEvents, setRsvpEvents] = useState(() => {
+    try {
+      const saved = localStorage.getItem("pusula_rsvp");
+      return saved ? JSON.parse(saved) : [];
+    } catch { return []; }
+  });
 const [selectedEventFromProfile, setSelectedEventFromProfile] = useState(null);
 
   const pendingBiz = dbBusinesses; // Admin tüm işletmeleri görür
@@ -5370,7 +5695,13 @@ const [selectedEventFromProfile, setSelectedEventFromProfile] = useState(null);
   };
   const clearSearchHistory = () => setSearchHistory([]);
 
-  const markAllRead = () => setNotifications(prev=>prev.map(n=>({...n,read:true})));
+  const markAllRead = (idx) => {
+    if (typeof idx === "number") {
+      setNotifications(prev=>prev.map((n,i)=>i===idx?{...n,read:true}:n));
+    } else {
+      setNotifications(prev=>prev.map(n=>({...n,read:true})));
+    }
+  };
 
   // FIX 3: Benzer işletmeler navigation stack
   const openBusiness = (b) => {
@@ -5549,7 +5880,7 @@ const [selectedEventFromProfile, setSelectedEventFromProfile] = useState(null);
   if (screen==="auth")        return <W><AuthScreen onAuth={handleAuth} onBack={()=>setScreen("main")} signupRef={signupInProgress}/></W>;
   if (screen==="register")    return <W><RegisterBusiness onBack={()=>setScreen("main")} onSuccess={handleRegisterBiz}/></W>;
   if (screen==="editprofile") return <W><EditProfile profile={userProfile} onBack={()=>setScreen("main")} onSave={p=>{setUserProfile(p);setScreen("main");}}/></W>;
-  if (screen==="postjob")     return <W><PostJob onBack={()=>setScreen("main")} onSuccess={(form)=>{ addJob(form); setSubScreen("jobs"); setScreen("main"); }} userName={userProfile.name}/></W>;
+  if (screen==="postjob")     return <W><PostJob onBack={()=>{ setEditingJob(null); setScreen("main"); }} onSuccess={(form)=>{ addJob(form); setEditingJob(null); setSubScreen("jobs"); setScreen("main"); }} userName={userProfile.name} editJob={editingJob}/></W>;
   if (screen==="postevent")   return <W><PostEvent onBack={()=>setScreen("main")} onSuccess={(form)=>{
   const newEvent = {...form, id:Date.now(), img:"🎉", attendees:0, cat:form.cat||"Kültür & Sanat", image_url:form.image_url||form.imageUrl||null};
   setMyEvents(prev=>[...prev, newEvent]);
@@ -5558,15 +5889,19 @@ const [selectedEventFromProfile, setSelectedEventFromProfile] = useState(null);
 }}/></W>;
   if (screen==="notifications") return <W><NotificationsScreen notifications={notifications} onBack={()=>setScreen("main")} onMarkRead={markAllRead} onNavigate={n=>{
     setScreen("main");
-    if (n.icon==="💼") setSubScreen("jobs");
-    else if (n.icon==="🎉") setSubScreen("events");
+    if (n.link === "jobs" || n.icon==="💼") setSubScreen("jobs");
+    else if (n.link === "events" || n.icon==="🎉") setSubScreen("events");
+    else if (n.bizId) {
+      const biz = dbBusinesses.find(b=>String(b.id)===String(n.bizId));
+      if (biz) openBusiness(biz);
+    }
     else if (n.icon==="⏳" || n.icon==="🏢") setScreen("bizprofile");
   }}/></W>;
-  if (screen==="admin")       return <W><AdminPanel onBack={()=>setScreen("main")} pendingBiz={pendingBiz}/></W>;
+  if (screen==="admin")       return <W><AdminPanel onBack={()=>setScreen("main")}/></W>;
   if (screen==="bizprofile" && myBusiness)  return <W><BusinessOwnerProfile business={myBusiness} onBack={()=>setScreen("main")} reviews={reviews} onEdit={()=>setScreen("register")} onUpdate={(upd)=>{ setMyBusiness(p=>({...p,...upd})); setDbBusinesses(prev=>prev.map(b=>b.id===myBusiness?.id?{...b,...upd}:b)); }}/></W>;
   if (viewUser)               return <W><UserProfilePage user={viewUser} reviews={reviews} onBack={()=>setViewUser(null)}/></W>;
 
-  if (subScreen==="jobs")   return <W><Jobs   onBack={()=>setSubScreen(null)} onPost={loggedIn?()=>setScreen("postjob"):()=>setScreen("auth")} extraJobs={[...extraJobs,...dbJobs]} userState={userState} currentUserId={userProfile?.id||null} onEditJob={(job)=>{ setScreen("postjob"); }}/></W>;
+  if (subScreen==="jobs")   return <W><Jobs   onBack={()=>setSubScreen(null)} onPost={loggedIn?()=>setScreen("postjob"):()=>setScreen("auth")} extraJobs={[...extraJobs,...dbJobs]} userState={userState} currentUserId={userProfile?.id||null} onEditJob={(job)=>{ setEditingJob(job); setScreen("postjob"); }}/></W>;
   if (editingEvent)          return <W><EventEditScreen event={editingEvent} onBack={()=>setEditingEvent(null)} onSave={(updated)=>{
     if(updated){
       setMyEvents(prev=>prev.map(e=>e.id===updated.id?{...e,...updated}:e));
@@ -5577,7 +5912,7 @@ const [selectedEventFromProfile, setSelectedEventFromProfile] = useState(null);
     }
     setEditingEvent(null);
   }}/></W>;
-  if (subScreen==="events") return <W><Events onBack={()=>setSubScreen(null)} onPost={loggedIn?()=>setScreen("postevent"):()=>setScreen("auth")} dbEvents={dbEvents} rsvpList={rsvpEvents} onRsvpChange={setRsvpEvents} initialEvent={selectedEventFromProfile} onClearInitial={()=>setSelectedEventFromProfile(null)} currentUserId={userProfile?.id || null} onEditEvent={(ev)=>setEditingEvent(ev)} userState={userState}/></W>;
+  if (subScreen==="events") return <W><Events onBack={()=>setSubScreen(null)} onPost={loggedIn?()=>setScreen("postevent"):()=>setScreen("auth")} dbEvents={dbEvents} rsvpList={rsvpEvents} onRsvpChange={(ids)=>{ setRsvpEvents(ids); localStorage.setItem("pusula_rsvp", JSON.stringify(ids)); }} initialEvent={selectedEventFromProfile} onClearInitial={()=>setSelectedEventFromProfile(null)} currentUserId={userProfile?.id || null} onEditEvent={(ev)=>setEditingEvent(ev)} userState={userState}/></W>;
 
   if (business) return (
     <W>
@@ -5646,6 +5981,7 @@ dbEvents={[...events, ...dbEvents]}
                   localStorage.removeItem("pusula_profile");
                   localStorage.removeItem("pusula_state");
                   localStorage.removeItem("pusula_city");
+                  localStorage.removeItem("pusula_rsvp");
                   await supabase.auth.signOut();
                 } catch (err) {
                 }

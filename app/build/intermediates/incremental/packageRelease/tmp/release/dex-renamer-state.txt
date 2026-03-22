@@ -1,0 +1,4 @@
+#Sun Mar 22 16:44:12 EDT 2026
+base.0=C\:\\Users\\17034\\Desktop\\pusula-amerika\\app\\build\\intermediates\\dex\\release\\minifyReleaseWithR8\\classes.dex
+renamed.0=classes.dex
+path.0=classes.dex
