@@ -17,6 +17,9 @@ export default defineConfig({
     react(),
     VitePWA({
       registerType: 'autoUpdate',
+      devOptions: {
+        enabled: false,
+      },
       includeAssets: ['logo.png', 'icon-192.png', 'icon-512.png', 'favicon.ico'],
       manifest: {
         name: 'Pusula Amerika',

@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 import { supabase } from './supabase'
 
 /* ── Google Fonts ── */
@@ -184,6 +184,7 @@ const categories = [
   { id:"accountant",  icon:"📊", label:"Muhasebe",      labelEN:"Accounting",   color:C.turqDark },
   { id:"jobs",        icon:"💼", label:"İş İlanları",   labelEN:"Jobs",         color:C.red      },
   { id:"events",      icon:"🎉", label:"Etkinlikler",   labelEN:"Events",       color:"#D97706"  },
+  { id:"homefood",    icon:"🍱", label:"Ev Yemekleri",  labelEN:"Home Food",    color:"#D97706"  },
   { id:"other",       icon:"➕", label:"Diğer",         labelEN:"Other",        color:"#64748B"  },
 ];
 // Şehir yakınlık haritası (yakın şehir önerileri için)
@@ -484,6 +485,7 @@ function Home({ userState, userCity, onBusiness, onTab, favorites, toggleFav, on
   const [showOverlay,  setShowOverlay]  = useState(false);
   const [showLocModal, setShowLocModal] = useState(false);
   const [filterState,  setFilterState]  = useState("");
+  const [showAllStates, setShowAllStates] = useState(false);
   const [filterCity,   setFilterCity]   = useState("");
   const [filterVerify, setFilterVerify] = useState(false);
   const [sortBy,       setSortBy]       = useState("default");
@@ -493,15 +495,17 @@ function Home({ userState, userCity, onBusiness, onTab, favorites, toggleFav, on
   ].filter(Boolean).length;
 
   const allBusinesses = [...businesses, ...dbBusinesses];
+
+  const activeState = filterState || userState;
   const filtered = allBusinesses
     .filter(b => {
       if (selCat && b.cat !== selCat) return false;
       const q = search.toLocaleLowerCase("tr");
       if (search && !b.name.toLocaleLowerCase("tr").includes(q) &&
           !b.city.toLocaleLowerCase("tr").includes(q) &&
-          !b.desc.toLocaleLowerCase("tr").includes(q) &&
-          !b.tags.some(t=>t.toLocaleLowerCase("tr").includes(q))) return false;
-      if (filterState && b.state !== filterState) return false;
+          !(b.desc||"").toLocaleLowerCase("tr").includes(q) &&
+          !(b.tags||[]).some(t=>t.toLocaleLowerCase("tr").includes(q))) return false;
+      if (!showAllStates && activeState && b.state !== activeState && !b.nationwide) return false;
       if (filterCity  && !b.city.toLowerCase().includes(filterCity.toLowerCase())) return false;
       if (filterVerify && !b.verified) return false;
       return true;
@@ -524,7 +528,7 @@ function Home({ userState, userCity, onBusiness, onTab, favorites, toggleFav, on
 
   const clearAll = () => {
     setSelCat(null); setSearch(""); setFilterState(""); setFilterCity("");
-    setFilterVerify(false); setSortBy("default");
+    setFilterVerify(false); setSortBy("default"); setShowAllStates(false);
   };
 
   return (
@@ -627,22 +631,25 @@ function Home({ userState, userCity, onBusiness, onTab, favorites, toggleFav, on
         <div style={{ background:C.white, borderBottom:`1px solid ${C.border}`,
           padding:"16px 18px" }}>
 
-          {/* Eyalet */}
-          <div style={{ marginBottom:12 }}>
-            <div style={{ fontSize:10, fontWeight:700, color:C.textMute,
-              letterSpacing:1.5, textTransform:"uppercase", marginBottom:6 }}>Eyalet</div>
-            <select value={filterState} onChange={e=>setFilterState(e.target.value)}
-              style={{ width:"100%", padding:"9px 12px", borderRadius:10,
-                border:`1.5px solid ${filterState ? C.red : C.border}`,
-                background:filterState ? C.redLight : C.redPale,
-                fontSize:13, color:filterState ? C.red : C.textMute,
-                outline:"none", fontWeight: filterState ? 700 : 400 }}>
-              <option value="">Tüm eyaletler</option>
-              {US_STATES.map(s=>(
-                <option key={s} value={s}>{s}</option>
-              ))}
-            </select>
-          </div>
+          {/* Eyalet Toggle */}
+          {userState && (
+            <div style={{ marginBottom:12 }}>
+              <div style={{ fontSize:10, fontWeight:700, color:C.textMute,
+                letterSpacing:1.5, textTransform:"uppercase", marginBottom:8 }}>Konum</div>
+              <div style={{ display:"flex", gap:8 }}>
+                {[{v:false,l:`📍 ${userState}`},{v:true,l:"🌎 Tüm Amerika"}].map(opt=>(
+                  <div key={String(opt.v)} onClick={()=>setShowAllStates(opt.v)}
+                    style={{ flex:1, padding:"9px 8px", borderRadius:10, textAlign:"center",
+                      fontSize:12, fontWeight:700, cursor:"pointer",
+                      background: showAllStates===opt.v ? C.red : C.redPale,
+                      border:`1.5px solid ${showAllStates===opt.v ? C.red : C.border}`,
+                      color: showAllStates===opt.v ? C.white : C.textSub }}>
+                    {opt.l}
+                  </div>
+                ))}
+              </div>
+            </div>
+          )}
 
         
 
@@ -841,8 +848,11 @@ function Home({ userState, userCity, onBusiness, onTab, favorites, toggleFav, on
                     <div style={{ height:66,
                       background:`linear-gradient(135deg,#FFF8E1,#FFF3CD)`,
                       display:"flex", alignItems:"center", justifyContent:"center",
-                      fontSize:30, borderBottom:`1px solid #F59E0B`, position:"relative" }}>
-                      {b.img}
+                      fontSize:30, borderBottom:`1px solid #F59E0B`, position:"relative",
+                      overflow:"hidden" }}>
+                      {b.image_url
+                        ? <img src={b.image_url} alt={b.name} style={{ width:"100%", height:"100%", objectFit:"cover" }}/>
+                        : b.img}
                       <div style={{ position:"absolute", top:6, right:6,
                         background:"linear-gradient(135deg,#F59E0B,#D97706)",
                         borderRadius:6, padding:"2px 5px",
@@ -856,7 +866,7 @@ function Home({ userState, userCity, onBusiness, onTab, favorites, toggleFav, on
                       <div style={{ fontSize:10, color:C.textMute, marginBottom:4 }}>📍 {b.city}</div>
                       <div style={{ display:"flex", alignItems:"center", gap:4 }}>
                         <Stars r={b.rating}/>
-                        <span style={{ fontSize:10, fontWeight:700, color:C.text }}>{b.rating}</span>
+                        <span style={{ fontSize:10, fontWeight:700, color:C.text }}>{b.rating||"-"}</span>
                       </div>
                     </div>
                   </div>
@@ -865,15 +875,15 @@ function Home({ userState, userCity, onBusiness, onTab, favorites, toggleFav, on
             </div>
 
             {/* Yakınımdaki İşletmeler */}
-            {userState && (() => {
-              const nearby = businesses.filter(b=>b.state===userState).slice(0,6);
+            {userState && !showAllStates && (() => {
+              const nearby = allBusinesses.filter(b=>b.state===userState).slice(0,6);
               if (!nearby.length) return null;
               return (
                 <div style={{ padding:"18px 18px 0" }}>
                   <div style={{ display:"flex", justifyContent:"space-between",
                     alignItems:"center", marginBottom:12 }}>
                     <SLabel>📍 YAKINIMDAKI İŞLETMELER</SLabel>
-                    <div onClick={()=>setFilterState(userState)}
+                    <div onClick={()=>{}}
                       style={{ fontSize:12, color:C.red, fontWeight:600,
                         cursor:"pointer", marginTop:-12 }}>Tümü →</div>
                   </div>
@@ -898,7 +908,7 @@ function Home({ userState, userCity, onBusiness, onTab, favorites, toggleFav, on
                         <div style={{ fontSize:10, color:C.textMute, marginBottom:4 }}>📍 {b.city}</div>
                         <div style={{ display:"flex", alignItems:"center", gap:3, marginBottom:4 }}>
                           <Stars r={b.rating}/>
-                          <span style={{ fontSize:10, fontWeight:700, color:C.text }}>{b.rating}</span>
+                          <span style={{ fontSize:10, fontWeight:700, color:C.text }}>{b.rating||"-"}</span>
                         </div>
                         {(() => {
                           const open = isOpenNow(b.hours);
@@ -947,11 +957,11 @@ function Home({ userState, userCity, onBusiness, onTab, favorites, toggleFav, on
           
           {isFiltering && activeFilterCount>0 && (
             <div style={{ display:"flex", gap:6, flexWrap:"wrap", marginBottom:12 }}>
-              {filterState && (
-                <div onClick={()=>setFilterState("")} style={{ display:"flex", alignItems:"center",
+              {showAllStates && userState && (
+                <div onClick={()=>setShowAllStates(false)} style={{ display:"flex", alignItems:"center",
                   gap:4, background:C.red, borderRadius:20, padding:"4px 10px",
                   fontSize:10, fontWeight:700, color:C.white, cursor:"pointer" }}>
-                  📍 {filterState} ✕
+                  🌎 Tüm Amerika ✕
                 </div>
               )}
               {filterCity && (
@@ -1017,8 +1027,10 @@ function Home({ userState, userCity, onBusiness, onTab, favorites, toggleFav, on
                 flexShrink:0, background:`linear-gradient(135deg,${C.redPale},#FFF5F6)`,
                 border:`1px solid ${C.border}`,
                 display:"flex", alignItems:"center", justifyContent:"center",
-                fontSize:24, cursor:"pointer" }}>
-                {b.img}
+                fontSize:24, cursor:"pointer", overflow:"hidden" }}>
+                {b.image_url
+                  ? <img src={b.image_url} alt={b.name} style={{ width:"100%", height:"100%", objectFit:"cover" }}/>
+                  : b.img}
               </div>
               <div onClick={()=>onBusiness(b)} style={{ flex:1, minWidth:0, cursor:"pointer" }}>
                 <div style={{ display:"flex", justifyContent:"space-between",
@@ -1042,7 +1054,7 @@ function Home({ userState, userCity, onBusiness, onTab, favorites, toggleFav, on
                 </div>
                 <div style={{ display:"flex", alignItems:"center", gap:5, marginBottom:6 }}>
                   <Stars r={b.rating}/>
-                  <span style={{ fontSize:12, fontWeight:700, color:C.text }}>{b.rating}</span>
+                  <span style={{ fontSize:12, fontWeight:700, color:C.text }}>{b.rating||"-"}</span>
                   <span style={{ fontSize:11, color:C.textMute }}>({b.reviews})</span>
                   {(() => {
                     const open = isOpenNow(b.hours);
@@ -1059,7 +1071,7 @@ function Home({ userState, userCity, onBusiness, onTab, favorites, toggleFav, on
                   })()}
                 </div>
                 <div style={{ display:"flex", flexWrap:"wrap", gap:4 }}>
-                  {b.tags.map(t=><Tag key={t} label={t}/>)}
+                  {(b.tags||[]).map(t=><Tag key={t} label={t}/>)}
                 </div>
               </div>
               <div onClick={()=>toggleFav(b.id)} style={{ flexShrink:0, fontSize:26,
@@ -1134,7 +1146,7 @@ function Favorites({ favorites, onBusiness, toggleFav, dbBusinesses=[] }) {
               <div style={{ fontSize:11, color:C.textMute, marginBottom:5 }}>📍 {b.city}, {b.state}</div>
               <div style={{ display:"flex", alignItems:"center", gap:5 }}>
                 <Stars r={b.rating}/>
-                <span style={{ fontSize:12, fontWeight:700, color:C.text }}>{b.rating}</span>
+                <span style={{ fontSize:12, fontWeight:700, color:C.text }}>{b.rating||"-"}</span>
                 <span style={{ fontSize:11, color:C.textMute }}>({b.reviews})</span>
               </div>
             </div>
@@ -1150,9 +1162,77 @@ function Favorites({ favorites, onBusiness, toggleFav, dbBusinesses=[] }) {
   );
 }
 
-function Jobs({ onBack, onPost, extraJobs=[] }) {
+function Jobs({ onBack, onPost, extraJobs=[], userState="", currentUserId=null, onEditJob }) {
+  const [showAllStates, setShowAllStates] = useState(false);
+  const [selectedJob, setSelectedJob] = useState(null);
   const allJobs = [...extraJobs, ...jobs];
-  const filtered = allJobs;
+  const filtered = (showAllStates || !userState)
+    ? allJobs
+    : allJobs.filter(j => !j.state || j.state === userState || j.nationwide);
+
+  // Detay modalı
+  if (selectedJob) return (
+    <div style={{ height:"100vh", display:"flex", flexDirection:"column", background:C.bgSoft }}>
+      <div style={{ background:`linear-gradient(135deg,${C.red},${C.redDark})`, padding:"20px 20px 28px" }}>
+        <button onClick={()=>setSelectedJob(null)} style={{ background:"none", border:"none",
+          color:"rgba(255,255,255,0.75)", fontSize:13, fontWeight:700,
+          cursor:"pointer", marginBottom:16, display:"flex", alignItems:"center", gap:6 }}>← Geri</button>
+        <div style={{ display:"flex", alignItems:"center", gap:12 }}>
+          <div style={{ width:50, height:50, borderRadius:14, flexShrink:0,
+            background:"rgba(255,255,255,0.2)", border:"2px solid rgba(255,255,255,0.4)",
+            display:"flex", alignItems:"center", justifyContent:"center", fontSize:24 }}>💼</div>
+          <div>
+            <div style={{ fontSize:18, fontWeight:700, color:C.white, lineHeight:1.3 }}>{selectedJob.title}</div>
+            <div style={{ fontSize:12, color:"rgba(255,255,255,0.75)", marginTop:3 }}>{selectedJob.company}</div>
+          </div>
+        </div>
+      </div>
+      <div style={{ flex:1, overflowY:"auto", padding:"18px" }}>
+        <div style={{ background:C.white, border:`1px solid ${C.border}`, borderRadius:16, padding:"16px", marginBottom:14 }}>
+          {[
+            { icon:"📍", label:"Konum", val: selectedJob.location },
+            { icon:"💼", label:"Çalışma Tipi", val: selectedJob.type },
+            { icon:"📅", label:"Tarih", val: selectedJob.posted },
+          ].filter(r=>r.val).map((row,i,arr)=>(
+            <div key={row.label} style={{ display:"flex", gap:12, padding:"10px 0",
+              borderBottom:i<arr.length-1?`1px solid ${C.border}`:"none", alignItems:"flex-start" }}>
+              <span style={{ fontSize:16 }}>{row.icon}</span>
+              <div>
+                <div style={{ fontSize:10, color:C.textMute, fontWeight:600, marginBottom:2 }}>{row.label}</div>
+                <div style={{ fontSize:13, color:C.text }}>{row.val}</div>
+              </div>
+            </div>
+          ))}
+        </div>
+        {selectedJob.description && (
+          <div style={{ background:C.white, border:`1px solid ${C.border}`, borderRadius:16, padding:"16px", marginBottom:14 }}>
+            <div style={{ fontSize:11, fontWeight:700, color:C.textMute, letterSpacing:1.5, textTransform:"uppercase", marginBottom:10 }}>İŞ TANIMI</div>
+            <div style={{ fontSize:13, color:C.text, lineHeight:1.7 }}>{selectedJob.description}</div>
+          </div>
+        )}
+        {selectedJob.tags?.length > 0 && (
+          <div style={{ display:"flex", flexWrap:"wrap", gap:6, marginBottom:14 }}>
+            {(selectedJob.tags||[]).map(t=><Tag key={t} label={t}/>)}
+          </div>
+        )}
+        {currentUserId && String(selectedJob.owner_id) === String(currentUserId) ? (
+          <button onClick={()=>onEditJob&&onEditJob(selectedJob)}
+            style={{ width:"100%", border:"none", borderRadius:13, padding:"14px", fontSize:14, fontWeight:700,
+              cursor:"pointer", background:`linear-gradient(135deg,${C.gold},${C.turqDark})`, color:C.white, marginBottom:10 }}>
+            ✏️ İlanı Düzenle
+          </button>
+        ) : null}
+        {selectedJob.phone && (
+          <a href={`tel:${selectedJob.phone}`} style={{ display:"block", width:"100%", boxSizing:"border-box",
+            background:`linear-gradient(135deg,${C.red},${C.redDark})`,
+            borderRadius:13, padding:"14px", textAlign:"center",
+            fontSize:14, fontWeight:700, color:C.white, textDecoration:"none" }}>
+            📞 İletişime Geç
+          </a>
+        )}
+      </div>
+    </div>
+  );
 
   return (
     <div style={{ height:"100vh", display:"flex", flexDirection:"column", background:C.bgSoft }}>
@@ -1176,10 +1256,25 @@ function Jobs({ onBack, onPost, extraJobs=[] }) {
 
       </div>
       <div style={{ flex:1, overflowY:"auto", padding:"16px 18px" }}>
+        {/* Eyalet toggle */}
+        {userState && (
+          <div style={{ display:"flex", alignItems:"center", justifyContent:"space-between",
+            background:C.white, border:`1px solid ${C.border}`, borderRadius:12,
+            padding:"10px 14px", marginBottom:12 }}>
+            <div style={{ fontSize:12, color:C.text, fontWeight:600 }}>
+              {showAllStates ? "🌎 Tüm Amerika" : `📍 ${userState}`}
+            </div>
+            <div onClick={()=>setShowAllStates(p=>!p)} style={{ fontSize:11, fontWeight:700,
+              color:C.red, cursor:"pointer", background:C.redPale,
+              border:`1px solid ${C.border}`, borderRadius:8, padding:"4px 10px" }}>
+              {showAllStates ? `Sadece ${userState}` : "Tüm Amerika"}
+            </div>
+          </div>
+        )}
         {filtered.map(job => (
-          <div key={job.id} style={{ background:C.white, border:`1px solid ${C.border}`,
+          <div key={job.id} onClick={()=>setSelectedJob(job)} style={{ background:C.white, border:`1px solid ${C.border}`,
             borderRadius:16, padding:"16px", marginBottom:10,
-            position:"relative", overflow:"hidden",
+            position:"relative", overflow:"hidden", cursor:"pointer",
             boxShadow:"0 1px 4px rgba(200,16,46,0.05)" }}>
             {job.urgent && <div style={{ position:"absolute", top:0, left:0, right:0, height:3,
               background:`linear-gradient(90deg,${C.red},${C.redMid})` }}/>}
@@ -1201,17 +1296,25 @@ function Jobs({ onBack, onPost, extraJobs=[] }) {
               <span style={{ fontSize:11, color:C.textMute }}>{job.posted}</span>
             </div>
             <div style={{ display:"flex", flexWrap:"wrap", gap:5, marginBottom:12 }}>
-              {job.tags.map(t=><Tag key={t} label={t}/>)}
+              {(job.tags||[]).map(t=><Tag key={t} label={t}/>)}
+            </div>
+            <div style={{ display:"flex", gap:8 }}>
+              {currentUserId && String(job.owner_id)===String(currentUserId) && (
+                <div style={{ background:"linear-gradient(135deg,#FEF3C7,#FDE68A)", border:"1px solid #F59E0B",
+                  borderRadius:8, padding:"3px 10px", fontSize:10, fontWeight:700, color:"#92400E", marginBottom:6, display:"inline-block" }}>
+                  ✏️ Benim İlanım
+                </div>
+              )}
             </div>
             <div style={{ display:"flex", gap:8 }}>
               {job.phone && (
-                <a href={`tel:${job.phone}`} style={{ flex:2,
+                <a href={`tel:${job.phone}`} onClick={e=>e.stopPropagation()} style={{ flex:2,
                   background:`linear-gradient(135deg,${C.red},${C.redDark})`,
                   borderRadius:10, padding:"10px", textAlign:"center",
                   fontSize:12, fontWeight:700, color:C.white, cursor:"pointer",
                   textDecoration:"none", display:"block" }}>📞 İletişime Geç</a>
               )}
-              <div onClick={()=>{if(navigator.share)navigator.share({title:job.title,text:`${job.company}`});}}
+              <div onClick={e=>{e.stopPropagation();if(navigator.share)navigator.share({title:job.title,text:`${job.company}`});}}
                 style={{ flex:1, background:C.redPale, border:`1px solid ${C.border}`,
                 borderRadius:10, padding:"10px", textAlign:"center",
                 fontSize:12, color:C.textSub, cursor:"pointer" }}>📤 Paylaş</div>
@@ -1224,7 +1327,7 @@ function Jobs({ onBack, onPost, extraJobs=[] }) {
   );
 }
 
-function Events({ onBack, onPost, dbEvents=[], rsvpList=[], onRsvpChange, initialEvent=null, onClearInitial, currentUserId=null, onEditEvent }) {
+function Events({ onBack, onPost, dbEvents=[], rsvpList=[], onRsvpChange, initialEvent=null, onClearInitial, currentUserId=null, onEditEvent, userState="" }) {
   const [filter, setFilter] = useState("Tümü");
   const [rsvp, setRsvp] = useState(rsvpList||[]); // katılınan etkinlik id'leri
 const [selectedEvent, setSelectedEvent] = useState(initialEvent);
@@ -1235,8 +1338,12 @@ const [photoView, setPhotoView] = useState(null);
   onRsvpChange && onRsvpChange(newRsvp);
 };
   const catList = ["Tümü","Ulusal Bayram","Kültür & Sanat","Yemek","Networking","Müzik"];
+  const [showAllStates, setShowAllStates] = useState(false);
   const allEvents = [...events, ...dbEvents];
-  const filtered = filter==="Tümü" ? allEvents : allEvents.filter(e=>e.cat===filter);
+  const stateFiltered = (showAllStates || !userState)
+    ? allEvents
+    : allEvents.filter(e => !e.state || e.state === userState || e.nationwide);
+  const filtered = filter==="Tümü" ? stateFiltered : stateFiltered.filter(e=>e.cat===filter);
   if (selectedEvent) return (
     <div style={{ minHeight:"100vh", height:"100vh", display:"flex", flexDirection:"column", background:C.bgSoft, width:"100%" }}>
       <div style={{ background:`linear-gradient(135deg,${C.red},${C.redDark})`, padding:"20px 20px 32px" }}>
@@ -1287,7 +1394,7 @@ const [photoView, setPhotoView] = useState(null);
             <div style={{ fontSize:13, color:C.text, lineHeight:1.7 }}>{selectedEvent.description}</div>
           </div>
         )}
-        {currentUserId && selectedEvent.owner_id === currentUserId ? (
+        {currentUserId && String(selectedEvent.owner_id) === String(currentUserId) ? (
           <button onClick={()=>onEditEvent&&onEditEvent(selectedEvent)}
             style={{ width:"100%", border:"none", borderRadius:13, padding:"14px", fontSize:14, fontWeight:700,
               cursor:"pointer", background:`linear-gradient(135deg,${C.red},${C.redDark})`, color:C.white }}>
@@ -1337,6 +1444,21 @@ const [photoView, setPhotoView] = useState(null);
         </div>
       </div>
       <div style={{ flex:1, overflowY:"auto", padding:"16px 18px" }}>
+        {/* Eyalet filtre toggle */}
+        {userState && (
+          <div style={{ display:"flex", alignItems:"center", justifyContent:"space-between",
+            background:C.white, border:`1px solid ${C.border}`, borderRadius:12,
+            padding:"10px 14px", marginBottom:12 }}>
+            <div style={{ fontSize:12, color:C.text, fontWeight:600 }}>
+              {showAllStates ? "🌎 Tüm Amerika" : `📍 ${userState}`}
+            </div>
+            <div onClick={()=>setShowAllStates(p=>!p)} style={{ fontSize:11, fontWeight:700,
+              color:C.red, cursor:"pointer", background:C.redPale,
+              border:`1px solid ${C.border}`, borderRadius:8, padding:"4px 10px" }}>
+              {showAllStates ? `Sadece ${userState}` : "Tüm Amerika"}
+            </div>
+          </div>
+        )}
         {filtered.map(ev => (
           <div key={ev.id} onClick={()=>setSelectedEvent(ev)} style={{ background:C.white, border:`1px solid ${C.border}`,
             borderRadius:16, overflow:"hidden", marginBottom:12,
@@ -1378,16 +1500,16 @@ const [photoView, setPhotoView] = useState(null);
                     {ev.free?"ÜCRETSİZ":ev.price}
                   </span>
                 </div>
-                <div onClick={()=>{ if(currentUserId && ev.owner_id===currentUserId){ onEditEvent&&onEditEvent(ev); } else { toggleRsvp(ev.id); } }} style={{
-                  background:currentUserId && ev.owner_id===currentUserId
-                    ? `linear-gradient(135deg,${C.red},${C.redDark})`
+                <div onClick={(e)=>{ e.stopPropagation(); const isOwner = currentUserId && String(ev.owner_id)===String(currentUserId); if(isOwner){ onEditEvent&&onEditEvent(ev); } else { toggleRsvp(ev.id); } }} style={{
+                  background: currentUserId && String(ev.owner_id)===String(currentUserId)
+                    ? `linear-gradient(135deg,${C.gold},${C.turqDark})`
                     : rsvp.includes(ev.id)
                     ?`linear-gradient(135deg,#28a745,#1e7e34)`
                     :`linear-gradient(135deg,${C.red},${C.redDark})`,
                   borderRadius:10, padding:"7px 16px",
                   fontSize:11, fontWeight:700, color:C.white, cursor:"pointer",
                   transition:"all 0.2s" }}>
-                  {currentUserId && ev.owner_id===currentUserId ? "✏️ Düzenle" : rsvp.includes(ev.id)?"✓ Katılıyorum":"Katıl"}
+                  {currentUserId && String(ev.owner_id)===String(currentUserId) ? "✏️ Düzenle" : rsvp.includes(ev.id)?"✓ Katılıyorum":"Katıl"}
                 </div>
               </div>
             </div>
@@ -1425,6 +1547,7 @@ function RegisterBusiness({ onBack, onSuccess }) {
     address:"", city:"", state:"", zip:"",
     phone:"", website:"", image:null, gallery:[],
     hours: DAYS.map(d=>({ day:d, open:true, from:"09:00", to:"18:00" })),
+    nationwide: false,
   });
   const [submitted, setSubmitted] = useState(false);
 
@@ -1709,6 +1832,29 @@ function RegisterBusiness({ onBack, onSuccess }) {
               <div style={{ fontSize:10, color:C.textMute }}>Max 6 fotoğraf</div>
             </div>
             
+            {/* Görünürlük — sadece ilgili kategoriler için */}
+            {["homefood","accountant","realestate","lawyer","other"].includes(form.category) && (
+              <div style={{ marginBottom:14 }}>
+                <div style={{ fontSize:11, fontWeight:700, color:C.textSub,
+                  letterSpacing:0.5, marginBottom:8 }}>İşletme Görünürlüğü</div>
+                <div style={{ fontSize:11, color:C.textMute, marginBottom:8, lineHeight:1.5 }}>
+                  İşletmenizin hangi bölgede görüneceğini seçin.
+                </div>
+                <div style={{ display:"flex", gap:8 }}>
+                  {[{v:false,l:"📍 Sadece Eyaletim"},{v:true,l:"🌎 Tüm Amerika"}].map(opt=>(
+                    <div key={String(opt.v)} onClick={()=>set("nationwide",opt.v)}
+                      style={{ flex:1, padding:"10px 8px", borderRadius:11, textAlign:"center",
+                        fontSize:12, fontWeight:700, cursor:"pointer",
+                        background: form.nationwide===opt.v ? C.red : C.redPale,
+                        border:`1.5px solid ${form.nationwide===opt.v ? C.red : C.border}`,
+                        color: form.nationwide===opt.v ? C.white : C.textSub }}>
+                      {opt.l}
+                    </div>
+                  ))}
+                </div>
+              </div>
+            )}
+
              {/* Etiketler */}
             <Field label="Etiketler (virgülle ayırın)" value={form.tags}
               onChange={v=>set("tags",v)}
@@ -1967,8 +2113,8 @@ const [tab, setTab] = useState("info"); // info | favs | events
             background:"rgba(255,255,255,0.2)", border:"2.5px solid rgba(255,255,255,0.4)",
             display:"flex", alignItems:"center", justifyContent:"center",
             fontSize:28, overflow:"hidden" }}>
-            {userProfile.photoURL
-              ? <img src={userProfile.photoURL} alt="profil" style={{ width:"100%", height:"100%", objectFit:"cover" }}/>
+            {(userProfile.photo_url || userProfile.photoURL)
+              ? <img src={userProfile.photo_url || userProfile.photoURL} alt="profil" style={{ width:"100%", height:"100%", objectFit:"cover" }}/>
               : (userProfile.avatar || "👤")}
           </div>
           <div style={{ flex:1 }}>
@@ -2112,7 +2258,7 @@ const [tab, setTab] = useState("info"); // info | favs | events
                 <div style={{ fontSize:11, color:C.textMute, marginBottom:4 }}>📍 {b.state}</div>
                 <div style={{ display:"flex", alignItems:"center", gap:4 }}>
                   <Stars r={b.rating}/>
-                  <span style={{ fontSize:11, fontWeight:700, color:C.text }}>{b.rating}</span>
+                  <span style={{ fontSize:11, fontWeight:700, color:C.text }}>{b.rating||"-"}</span>
                 </div>
               </div>
             </div>
@@ -2121,12 +2267,12 @@ const [tab, setTab] = useState("info"); // info | favs | events
 
         {/* Yorumlar */}
         {tab==="reviews" && (
-          reviews.filter(r=>r.user===userProfile.name).length===0 ? (
+          reviews.filter(r=>r.user_id===userProfile.id||r.user===userProfile.name).length===0 ? (
             <div style={{ textAlign:"center", paddingTop:40 }}>
               <div style={{ fontSize:40, marginBottom:12 }}>💬</div>
               <div style={{ fontSize:14, color:C.textSub }}>Henüz yorum yapılmadı</div>
             </div>
-          ) : reviews.filter(r=>r.user===userProfile.name).map((r,i)=>(
+          ) : reviews.filter(r=>r.user_id===userProfile.id||r.user===userProfile.name).map((r,i)=>(
             <div key={i} style={{ background:C.white, border:`1px solid ${C.border}`,
               borderRadius:16, padding:"13px 16px", marginBottom:10 }}>
               <div style={{ display:"flex", alignItems:"center", gap:8, marginBottom:6 }}>
@@ -2160,7 +2306,7 @@ const [tab, setTab] = useState("info"); // info | favs | events
                 <div style={{ fontSize:11, color:C.textMute, marginBottom:4 }}>📍 {b.city}, {b.state}</div>
                 <div style={{ display:"flex", alignItems:"center", gap:4 }}>
                   <Stars r={b.rating}/>
-                  <span style={{ fontSize:11, fontWeight:700, color:C.text }}>{b.rating}</span>
+                  <span style={{ fontSize:11, fontWeight:700, color:C.text }}>{b.rating||"-"}</span>
                 </div>
               </div>
               <span style={{ color:C.red, fontSize:18 }}>♥</span>
@@ -2252,12 +2398,14 @@ function EditProfile({ profile, onSave, onBack }) {
   const set = (k,v) => setForm(f=>({...f,[k]:v}));
   const avatars = ["👤","👨","👩","👨‍💼","👩‍💼","🧑‍⚕️","👨‍🍳","👩‍🍳","🧑‍🔧"];
 
-  const [photoPreview, setPhotoPreview] = useState(form.photoURL||null);
+  const [photoPreview, setPhotoPreview] = useState(form.photo_url||form.photoURL||null);
+  const [photoFile, setPhotoFile] = useState(null);
   const handlePhoto = e => {
     const file = e.target.files[0];
     if (!file) return;
+    setPhotoFile(file);
     const reader = new FileReader();
-    reader.onload = ev => { setPhotoPreview(ev.target.result); set("photoURL", ev.target.result); };
+    reader.onload = ev => { setPhotoPreview(ev.target.result); };
     reader.readAsDataURL(file);
   };
 
@@ -2350,17 +2498,35 @@ function EditProfile({ profile, onSave, onBack }) {
         borderTop:`1px solid ${C.border}` }}>
         <button onClick={async()=>{
           const { data: { user } } = await supabase.auth.getUser();
-          if (user) {
-            await supabase.from("profiles").upsert({
-              id: user.id,
-              name: form.name,
-              email: form.email,
-              state: form.state,
-              city: form.city,
-              avatar: form.avatar,
-            });
+          if (!user) return;
+
+          let photoUrl = form.photo_url || form.photoURL || null;
+
+          // Yeni fotoğraf seçildiyse Storage'a yükle
+          if (photoFile) {
+            const ext = photoFile.name.split(".").pop();
+            const fileName = `avatar_${user.id}.${ext}`;
+            const { error: upErr } = await supabase.storage
+              .from("avatars")
+              .upload(fileName, photoFile, { upsert: true, contentType: photoFile.type });
+            if (!upErr) {
+              const { data: urlData } = supabase.storage.from("avatars").getPublicUrl(fileName);
+              photoUrl = urlData.publicUrl;
+            }
           }
-          onSave(form);
+
+          await supabase.from("profiles").upsert({
+            id: user.id,
+            name: form.name,
+            email: form.email,
+            state: form.state,
+            city: form.city,
+            avatar: form.avatar,
+            phone: form.phone || "",
+            photo_url: photoUrl,
+          });
+
+          onSave({ ...form, photo_url: photoUrl });
         }} style={{ width:"100%", border:"none",
           borderRadius:13, padding:"14px", fontSize:14, fontWeight:700,
           cursor:"pointer", background:`linear-gradient(135deg,${C.red},${C.redDark})`,
@@ -2372,7 +2538,7 @@ function EditProfile({ profile, onSave, onBack }) {
   );
 }
 
-function BusinessDetail({ business, onBack, favorites, toggleFav, reviews, onAddReview, onReport, onReportReview, onViewUser, lang, isOwner, onBusiness }) {
+function BusinessDetail({ business, onBack, favorites, toggleFav, reviews, onAddReview, onUpdateReview, onReport, onReportReview, onViewUser, lang, isOwner, onBusiness, userProfile }) {
   const [activeTab, setActiveTab] = useState("info");
   const [photoView, setPhotoView] = useState(null);
   const [showReviewForm, setShowReviewForm] = useState(false);
@@ -2390,13 +2556,18 @@ function BusinessDetail({ business, onBack, favorites, toggleFav, reviews, onAdd
     : business.rating;
   const isFav = favorites.includes(business.id);
   const todayKey = new Date().toDateString();
-  const alreadyReviewed = bizReviews.some(r=>r.user==="Sen" && r.date==="Az önce") ||
-    reviews.some(r=>r.bizId===business.id && r.user==="Sen" && r.todayKey===todayKey);
+  const myReview = bizReviews.find(r =>
+    (userProfile?.id && r.user_id === userProfile.id) ||
+    (userProfile?.name && r.user === userProfile.name && r.todayKey === todayKey)
+  );
+  const alreadyReviewed = !!myReview;
+  const [editingReview, setEditingReview] = useState(false);
+  const [editReviewData, setEditReviewData] = useState(null);
 
   const submitReview = () => {
     if(!newReview.stars) return;
     if(alreadyReviewed) return;
-    onAddReview({ bizId:business.id, ...newReview, date:"Az önce", user:"Sen", todayKey });
+    onAddReview({ bizId:business.id, ...newReview, date:"Az önce", user: userProfile?.name || "Sen", avatar: userProfile?.photo_url || userProfile?.avatar || "👤", todayKey });
     setNewReview({ stars:0, text:"" });
     setShowReviewForm(false);
     setActiveTab("reviews");
@@ -2540,7 +2711,7 @@ function BusinessDetail({ business, onBack, favorites, toggleFav, reviews, onAdd
                 navigator.share({ title:business.name, text:shareText });
               } else {
                 navigator.clipboard?.writeText(shareText);
-                alert("Kopyalandı! ✓");
+                // copied
               }
             }} style={{ flex:1, background:C.white, border:`1px solid ${C.border}`,
               borderRadius:12, padding:"12px", textAlign:"center", cursor:"pointer" }}>
@@ -2551,7 +2722,7 @@ function BusinessDetail({ business, onBack, favorites, toggleFav, reviews, onAdd
 
           {/* Etiketler */}
           <div style={{ display:"flex", flexWrap:"wrap", gap:6, paddingBottom:14 }}>
-            {business.tags.map(t=>(
+            {(business.tags||[]).map(t=>(
               <span key={t} style={{ background:C.redPale, border:`1px solid ${C.border}`,
                 borderRadius:20, padding:"5px 13px", fontSize:11,
                 color:C.textSub, fontWeight:600 }}>{t}</span>
@@ -2600,7 +2771,7 @@ function BusinessDetail({ business, onBack, favorites, toggleFav, reviews, onAdd
                 business_name: business.name,
                 reason: reason,
               });
-              alert("Kaldırma isteğiniz alındı.");
+              // removal request sent
             }} style={{ textAlign:"center", padding:"8px", marginTop:8,
               fontSize:11, color:"#EF4444", cursor:"pointer", textDecoration:"underline" }}>
               🗑️ İşletmeyi kaldır
@@ -2763,7 +2934,7 @@ function BusinessDetail({ business, onBack, favorites, toggleFav, reviews, onAdd
                             </div>
                             <div style={{ display:"flex", alignItems:"center", gap:6 }}>
                               <Stars r={b.rating}/>
-                              <span style={{ fontSize:11, fontWeight:700, color:C.text }}>{b.rating}</span>
+                              <span style={{ fontSize:11, fontWeight:700, color:C.text }}>{b.rating||"-"}</span>
                               <span style={{ fontSize:10, color:C.textMute }}>({b.reviews})</span>
                               {open !== null && (
                                 <span style={{
@@ -2845,8 +3016,14 @@ function BusinessDetail({ business, onBack, favorites, toggleFav, reviews, onAdd
               alreadyReviewed ? (
                 <div style={{ background:"#FEF3C7", border:"1px solid #F59E0B",
                   borderRadius:13, padding:"13px", marginBottom:14,
-                  textAlign:"center", fontSize:13, color:"#92400E", fontWeight:600 }}>
-                  ✅ Bu işletme için bugün yorum yaptınız
+                  fontSize:13, color:"#92400E", fontWeight:600,
+                  display:"flex", alignItems:"center", justifyContent:"space-between" }}>
+                  <span>✅ Bu işletme için yorum yaptınız</span>
+                  <button onClick={()=>{ setEditReviewData({stars: myReview?.stars||0, text: myReview?.text||""}); setEditingReview(true); setShowReviewForm(false); }}
+                    style={{ background:"#F59E0B", border:"none", borderRadius:8, padding:"5px 12px",
+                      fontSize:11, fontWeight:700, color:C.white, cursor:"pointer" }}>
+                    ✏️ Düzenle
+                  </button>
                 </div>
               ) : (
                 <button onClick={()=>setShowReviewForm(true)} style={{ width:"100%",
@@ -2905,6 +3082,55 @@ function BusinessDetail({ business, onBack, favorites, toggleFav, reviews, onAdd
               </div>
             )}
 
+            {/* Yorum düzenleme formu */}
+            {editingReview && editReviewData && (
+              <div style={{ background:C.white, border:`1.5px solid ${C.gold}`,
+                borderRadius:16, padding:"16px", marginBottom:14 }}>
+                <div style={{ fontSize:13, fontWeight:700, color:C.text, marginBottom:12 }}>
+                  ✏️ Yorumunuzu Düzenleyin
+                </div>
+                <div style={{ display:"flex", gap:6, marginBottom:14 }}>
+                  {[1,2,3,4,5].map(s=>(
+                    <span key={s} onClick={()=>setEditReviewData(r=>({...r,stars:s}))}
+                      style={{ fontSize:32, cursor:"pointer",
+                        color: editReviewData.stars>=s ? C.gold : "#EECDD0" }}>★</span>
+                  ))}
+                </div>
+                <textarea value={editReviewData.text}
+                  onChange={e=>setEditReviewData(r=>({...r,text:e.target.value}))}
+                  rows={3} placeholder="Yorumunuzu düzenleyin..."
+                  style={{ width:"100%", boxSizing:"border-box", padding:"11px 14px",
+                    borderRadius:11, border:`1.5px solid ${C.border}`,
+                    background:C.redPale, fontSize:14, color:C.text,
+                    outline:"none", resize:"none", fontFamily:"system-ui", marginBottom:10 }}/>
+                <div style={{ display:"flex", gap:8 }}>
+                  <button onClick={async()=>{
+                    if (!editReviewData.stars) return;
+                    const { data: { user } } = await supabase.auth.getUser();
+                    if (!user) return;
+                    const { error } = await supabase.from("reviews")
+                      .update({ rating: editReviewData.stars, comment: editReviewData.text })
+                      .eq("business_id", business.id).eq("user_id", user.id);
+                    if (!error) {
+                      onUpdateReview && onUpdateReview(business.id, user.id, {
+                        stars: editReviewData.stars, text: editReviewData.text
+                      });
+                      setEditingReview(false);
+                    }
+                  }} style={{ flex:2, border:"none", borderRadius:11, padding:"11px",
+                    fontSize:13, fontWeight:700, cursor:"pointer",
+                    background:`linear-gradient(135deg,${C.gold},${C.turqDark})`, color:C.white }}>
+                    💾 Kaydet
+                  </button>
+                  <button onClick={()=>setEditingReview(false)}
+                    style={{ flex:1, border:`1px solid ${C.border}`, borderRadius:11,
+                      padding:"11px", fontSize:13, color:C.textSub, cursor:"pointer", background:C.white }}>
+                    İptal
+                  </button>
+                </div>
+              </div>
+            )}
+
             {/* Yorum listesi */}
             {bizReviews.length===0 && (
               <div style={{ textAlign:"center", padding:"30px 0",
@@ -2917,14 +3143,16 @@ function BusinessDetail({ business, onBack, favorites, toggleFav, reviews, onAdd
                 borderRadius:16, padding:"14px 16px", marginBottom:10 }}>
                 <div style={{ display:"flex", justifyContent:"space-between",
                   alignItems:"flex-start", marginBottom:6 }}>
-                  <div onClick={()=>onViewUser&&onViewUser({name:r.user,avatar:r.avatar||"👤",helpfulCount:0})}
+                  <div onClick={()=>onViewUser&&onViewUser({name:r.user,avatar:r.avatar||"👤",photo_url:r.avatar?.startsWith?.("http")?r.avatar:null,helpfulCount:0})}
                     style={{ display:"flex", alignItems:"center", gap:8,
                       cursor:onViewUser?"pointer":"default" }}>
                     <div style={{ width:32, height:32, borderRadius:"50%",
                       background:`linear-gradient(135deg,${C.red},${C.redDark})`,
                       display:"flex", alignItems:"center", justifyContent:"center",
                       fontSize:14, color:C.white, fontWeight:700 }}>
-                      {r.avatar||r.user[0]}
+                      {r.avatar && r.avatar.startsWith("http")
+                        ? <img src={r.avatar} alt="" style={{ width:"100%", height:"100%", objectFit:"cover" }}/>
+                        : (r.avatar || r.user?.[0] || "👤")}
                     </div>
                     <div>
                       <div style={{ fontSize:12, fontWeight:700, color:C.red }}>{r.user}</div>
@@ -3035,7 +3263,7 @@ function BusinessDetail({ business, onBack, favorites, toggleFav, reviews, onAdd
   );
 }
 
-function AuthScreen({ onAuth, onBack }) {
+function AuthScreen({ onAuth, onBack, signupRef }) {
   const [mode, setMode]   = useState("login"); // login | signup
   const [form, setForm]   = useState({ name:"", email:"", password:"", state:"" });
   const [error, setError] = useState("");
@@ -3051,12 +3279,13 @@ const [showPrivacy, setShowPrivacy] = useState(false);
     setError("");
 
     if (mode==="signup") {
+      if (signupRef) signupRef.current = true;
       const { data, error } = await supabase.auth.signUp({
         email: form.email,
         password: form.password,
       });
-      if (error) { setError(error.message); return; }
-      await supabase.from("profiles").insert({
+      if (error) { if (signupRef) signupRef.current = false; setError(error.message); return; }
+      await supabase.from("profiles").upsert({
         id: data.user.id,
         name: form.name,
         email: form.email,
@@ -3064,6 +3293,7 @@ const [showPrivacy, setShowPrivacy] = useState(false);
         city: "",
         avatar: "👤",
       });
+      if (signupRef) signupRef.current = false;
       onAuth({
         id: data.user.id,
         name: form.name,
@@ -3377,7 +3607,7 @@ const [showPrivacy, setShowPrivacy] = useState(false);
 function PostJob({ onBack, onSuccess, userName }) {
   const [form, setForm] = useState({
     title:"", company:"", type:"Tam Zamanlı", location:"",
-    state:"", description:"", tags:"", phone:"",
+    state:"", description:"", tags:"", phone:"", nationwide:false,
   });
   const [submitted, setSubmitted] = useState(false);
   const set = (k,v) => setForm(f=>({...f,[k]:v}));
@@ -3443,6 +3673,24 @@ function PostJob({ onBack, onSuccess, userName }) {
         ))}
 
        
+
+        {/* Görünürlük */}
+        <div style={{ marginBottom:14 }}>
+          <div style={{ fontSize:11, fontWeight:700, color:C.textSub,
+            letterSpacing:0.5, marginBottom:8 }}>İlan Görünürlüğü</div>
+          <div style={{ display:"flex", gap:8 }}>
+            {[{v:false,l:"📍 Sadece Eyaletim"},{v:true,l:"🌎 Tüm Amerika"}].map(opt=>(
+              <div key={String(opt.v)} onClick={()=>set("nationwide",opt.v)}
+                style={{ flex:1, padding:"10px 8px", borderRadius:11, textAlign:"center",
+                  fontSize:12, fontWeight:700, cursor:"pointer",
+                  background: form.nationwide===opt.v ? C.red : C.redPale,
+                  border:`1.5px solid ${form.nationwide===opt.v ? C.red : C.border}`,
+                  color: form.nationwide===opt.v ? C.white : C.textSub }}>
+                {opt.l}
+              </div>
+            ))}
+          </div>
+        </div>
 
         {/* Eyalet */}
         <div style={{ marginBottom:14 }}>
@@ -3554,6 +3802,7 @@ function PostJob({ onBack, onSuccess, userName }) {
     free: form.free,
     price: form.price,
     image_url: imageUrl,
+    nationwide: form.nationwide || false,
     owner_id: user?.id || null,
   });
   setSubmitted(true);
@@ -3705,7 +3954,7 @@ function EventEditScreen({ event, onBack, onSave }) {
 function PostEvent({ onBack, onSuccess }) {
   const [form, setForm] = useState({
     title:"", org:"", date:"", location:"", state:"", zip:"",
-    cat:"Kültür & Sanat", free:true, price:"", description:"", image:null,
+    cat:"Kültür & Sanat", free:true, price:"", description:"", image:null, nationwide:false,
   });
   const [submitted, setSubmitted] = useState(false);
   const set = (k,v) => setForm(f=>({...f,[k]:v}));
@@ -3803,6 +4052,23 @@ function PostEvent({ onBack, onSuccess }) {
               background:C.redPale, fontSize:14, color:C.text, outline:"none" }}/>
         </div>
 
+        {/* Görünürlük */}
+        <div style={{ marginBottom:14 }}>
+          <div style={{ fontSize:11, fontWeight:700, color:C.textSub,
+            letterSpacing:0.5, marginBottom:8 }}>Etkinlik Görünürlüğü</div>
+          <div style={{ display:"flex", gap:8 }}>
+            {[{v:false,l:"📍 Sadece Eyaletim"},{v:true,l:"🌎 Tüm Amerika"}].map(opt=>(
+              <div key={String(opt.v)} onClick={()=>set("nationwide",opt.v)}
+                style={{ flex:1, padding:"10px 8px", borderRadius:11, textAlign:"center",
+                  fontSize:12, fontWeight:700, cursor:"pointer",
+                  background: form.nationwide===opt.v ? C.red : C.redPale,
+                  border:`1.5px solid ${form.nationwide===opt.v ? C.red : C.border}`,
+                  color: form.nationwide===opt.v ? C.white : C.textSub }}>
+                {opt.l}
+              </div>
+            ))}
+          </div>
+        </div>
         {/* Eyalet */}
         <div style={{ marginBottom:14 }}>
           <div style={{ fontSize:11, fontWeight:700, color:C.textSub,
@@ -3914,6 +4180,7 @@ function PostEvent({ onBack, onSuccess }) {
     free: form.free,
     price: form.price,
     image_url: imageUrl,
+    nationwide: form.nationwide || false,
     owner_id: user?.id || null,
   });
   setSubmitted(true);
@@ -3932,7 +4199,7 @@ function PostEvent({ onBack, onSuccess }) {
   );
 }
 
-function BizPhotoUpload({ business }) {
+function BizPhotoUpload({ business, onUpdate }) {
   const [uploading, setUploading] = useState(false);
   const [msg, setMsg] = useState("");
   const [profileUrl, setProfileUrl] = useState(business?.image_url||"");
@@ -3955,6 +4222,7 @@ function BizPhotoUpload({ business }) {
       const url = await uploadFile(file, `profile_${business.id}`);
       await supabase.from("businesses").update({ image_url: url }).eq("id", business.id);
       setProfileUrl(url);
+      onUpdate && onUpdate({ image_url: url });
       setMsg("✅ Profil fotoğrafı güncellendi!");
     } catch { setMsg("❌ Yükleme başarısız, tekrar dene."); }
     setUploading(false);
@@ -3969,6 +4237,7 @@ function BizPhotoUpload({ business }) {
       const newGallery = [...gallery, ...urls].slice(0, 6);
       await supabase.from("businesses").update({ gallery_urls: newGallery }).eq("id", business.id);
       setGallery(newGallery);
+      onUpdate && onUpdate({ gallery_urls: newGallery });
       setMsg("✅ Galeri güncellendi!");
     } catch { setMsg("❌ Yükleme başarısız, tekrar dene."); }
     setUploading(false);
@@ -4045,6 +4314,7 @@ function BizPhotoUpload({ business }) {
 
 function BusinessOwnerProfile({ business, onBack, reviews, onEdit, onUpdate }) {
   const bizReviews = reviews.filter(r=>r.bizId===business.id);
+  const [photoView, setPhotoView] = useState(null);
   const avgRating = bizReviews.length
     ? (bizReviews.reduce((s,r)=>s+r.stars,0)/bizReviews.length).toFixed(1)
     : business.rating;
@@ -4176,8 +4446,15 @@ function BusinessOwnerProfile({ business, onBack, reviews, onEdit, onUpdate }) {
                 description: editForm.desc,
                 hours: editForm.hours,
               }).eq("id", business.id);
+              onUpdate && onUpdate({
+                name: editForm.name,
+                phone: editForm.phone,
+                address: editForm.address,
+                desc: editForm.desc,
+                description: editForm.desc,
+                hours: editForm.hours,
+              });
               setEditing(false);
-              alert("Bilgiler güncellendi!");
             }} style={{ width:"100%", border:"none", borderRadius:11, padding:"12px",
               fontSize:13, fontWeight:700, cursor:"pointer",
               background:`linear-gradient(135deg,${C.red},${C.redDark})`, color:C.white }}>
@@ -4211,7 +4488,7 @@ function BusinessOwnerProfile({ business, onBack, reviews, onEdit, onUpdate }) {
         </div>
 
         {/* Fotoğraf Yükleme */}
-        <BizPhotoUpload business={business}/>
+        <BizPhotoUpload business={business} onUpdate={onUpdate}/>
 
         {/* Son yorumlar */}
         <div style={{ fontSize:10, fontWeight:700, color:C.textMute,
@@ -4221,20 +4498,32 @@ function BusinessOwnerProfile({ business, onBack, reviews, onEdit, onUpdate }) {
         {bizReviews.length===0 ? (
           <div style={{ textAlign:"center", padding:"20px 0",
             fontSize:13, color:C.textMute }}>Henüz yorum yok</div>
-        ) : bizReviews.slice(0,3).map((r,i)=>(
+        ) : bizReviews.map((r,i)=>(
           <div key={i} style={{ background:C.white, border:`1px solid ${C.border}`,
             borderRadius:14, padding:"12px 14px", marginBottom:8 }}>
             <div style={{ display:"flex", justifyContent:"space-between",
               alignItems:"center", marginBottom:6 }}>
-              <div style={{ fontSize:12, fontWeight:700, color:C.text }}>{r.user}</div>
+              <div style={{ display:"flex", alignItems:"center", gap:8 }}>
+                <div style={{ width:28, height:28, borderRadius:"50%", flexShrink:0,
+                  background:`linear-gradient(135deg,${C.red},${C.redDark})`,
+                  display:"flex", alignItems:"center", justifyContent:"center",
+                  fontSize:12, color:C.white, fontWeight:700, overflow:"hidden" }}>
+                  {r.avatar && r.avatar.startsWith("http")
+                    ? <img src={r.avatar} alt="" style={{ width:"100%", height:"100%", objectFit:"cover" }}/>
+                    : (r.avatar || r.user?.[0] || "👤")}
+                </div>
+                <div>
+                  <div style={{ fontSize:12, fontWeight:700, color:C.text }}>{r.user}</div>
+                  <div style={{ fontSize:10, color:C.textMute }}>{r.date}</div>
+                </div>
+              </div>
               <div style={{ display:"flex", gap:2 }}>
                 {[1,2,3,4,5].map(s=>(
                   <span key={s} style={{ fontSize:12, color:s<=r.stars?C.gold:"#EECDD0" }}>★</span>
                 ))}
               </div>
             </div>
-            {r.text && <div style={{ fontSize:12, color:C.text, lineHeight:1.5 }}>{r.text}</div>}
-            <div style={{ fontSize:10, color:C.textMute, marginTop:4 }}>{r.date}</div>
+            {r.text && <div style={{ fontSize:12, color:C.text, lineHeight:1.5, marginTop:6 }}>{r.text}</div>}
           </div>
         ))}
       </div>
@@ -4480,8 +4769,17 @@ function SearchOverlay({ history, onSelect, onClear, onClose }) {
 
 function UserProfilePage({ user, reviews, onBack }) {
   const userReviews = reviews.filter(r=>r.user===user.name);
+  const [bigPhoto, setBigPhoto] = useState(null);
+  const avatarUrl = user.photo_url || (user.avatar?.startsWith?.("http") ? user.avatar : null);
   return (
     <div style={{ height:"100vh", display:"flex", flexDirection:"column", background:C.bgSoft, width:"100%" }}>
+      {/* Fotoğraf büyütme modal */}
+      {bigPhoto && (
+        <div onClick={()=>setBigPhoto(null)} style={{ position:"fixed", inset:0, zIndex:999,
+          background:"rgba(0,0,0,0.85)", display:"flex", alignItems:"center", justifyContent:"center" }}>
+          <img src={bigPhoto} alt="" style={{ maxWidth:"92vw", maxHeight:"80vh", borderRadius:16, objectFit:"contain" }}/>
+        </div>
+      )}
       <div style={{ background:`linear-gradient(135deg,${C.red},${C.redDark})`,
         padding:"20px 20px 32px" }}>
         <button onClick={onBack} style={{ background:"none", border:"none",
@@ -4490,10 +4788,14 @@ function UserProfilePage({ user, reviews, onBack }) {
           ← Geri
         </button>
         <div style={{ textAlign:"center" }}>
-          <div style={{ width:64, height:64, borderRadius:"50%", margin:"0 auto 12px",
+          <div onClick={()=>avatarUrl&&setBigPhoto(avatarUrl)}
+            style={{ width:64, height:64, borderRadius:"50%", margin:"0 auto 12px",
             background:"rgba(255,255,255,0.2)", border:"3px solid rgba(255,255,255,0.5)",
-            display:"flex", alignItems:"center", justifyContent:"center", fontSize:30 }}>
-            {user.avatar||"👤"}
+            display:"flex", alignItems:"center", justifyContent:"center", fontSize:30,
+            overflow:"hidden", cursor:avatarUrl?"pointer":"default" }}>
+            {avatarUrl
+              ? <img src={avatarUrl} alt="" style={{ width:"100%", height:"100%", objectFit:"cover" }}/>
+              : (user.avatar||"👤")}
           </div>
           <div style={{ fontSize:18, fontWeight:700, color:C.white }}>{user.name}</div>
           <div style={{ fontSize:11, color:"rgba(255,255,255,0.65)", marginTop:4 }}>
@@ -4840,11 +5142,20 @@ export default function PusulaApp() {
   const [tab,         setTab]         = useState("home");
   const [business,    setBusiness]    = useState(null);
   const [bizHistory,  setBizHistory]  = useState([]); // FIX 3: navigation stack
-  const [userState,   setUserState]   = useState("");
-  const [userCity,    setUserCity]    = useState(""); // FIX: onboarding city
+  const [userState,   setUserState]   = useState(() => localStorage.getItem("pusula_state") || "");
+  const [userCity,    setUserCity]    = useState(() => localStorage.getItem("pusula_city") || "");
   const [favorites,   setFavorites]   = useState([]);
   const [subScreen,   setSubScreen]   = useState(null);
-  const [loggedIn,    setLoggedIn]    = useState(false);
+  const [userProfile, setUserProfile] = useState(() => {
+    try {
+      const saved = localStorage.getItem("pusula_profile");
+      if (saved) return { id:null, name:"", avatar:"👤", city:"", state:"", email:"", phone:"", reviewCount:0, bizCount:0, ...JSON.parse(saved) };
+    } catch {}
+    return { id:null, name:"", avatar:"👤", city:"", state:"", email:"", phone:"", reviewCount:0, bizCount:0 };
+  });
+  const [myBusiness, setMyBusiness] = useState(null);
+  const [myEvents,   setMyEvents]   = useState([]);
+    const [loggedIn, setLoggedIn] = useState(() => !!localStorage.getItem("pusula_profile"))
   const [lang,        setLang]        = useState("TR");
   const [reportModal, setReportModal] = useState(null);
   const [viewUser,    setViewUser]    = useState(null);
@@ -4866,57 +5177,94 @@ useEffect(() => {
         tags: b.tags||[], gallery: [categories.find(c=>c.id===b.category)?.icon||"🏢"],
       })));
       if (job) setDbJobs(job.map(j=>({
-        ...j, posted: new Date(j.created_at).toLocaleDateString("tr-TR"),
-        urgent: false, tags: j.tags||[],
+        ...j,
+        posted: new Date(j.created_at).toLocaleDateString("tr-TR"),
+        urgent: false,
+        tags: j.tags||[],
+        nationwide: j.nationwide||false,
+        description: j.description || "",
+        type: j.type || "",
       })));
       if (evt) setDbEvents(evt.map(e=>({
         ...e, cat: e.category, img: "🎉", attendees: 0,
         free: e.free, price: e.price||null,
+        nationwide: e.nationwide || false,
       })));
       if (rev) setReviews(rev.map(r=>({
         bizId: r.business_id, stars: r.rating, text: r.comment,
-        user: r.user_name, avatar: "👤",
+        user: r.user_name, user_id: r.user_id,
+        avatar: r.user_avatar || "👤",
         date: new Date(r.created_at).toLocaleDateString("tr-TR"),
       })));
     };
     fetchPublic();
 
     // Kullanıcı verilerini yükle
+    let loadedUserId = null;
     const loadUserData = async (userId, userEmail) => {
-      const { data: prof } = await supabase.from("profiles").select("*").eq("id", userId).single();
-      if (prof) {
+      if (loadedUserId === userId) { console.log("⏭️ Bu kullanıcı zaten yüklendi, skip"); return; }
+      loadedUserId = userId;
+
+      // İlk deneme
+      let { data: prof, error: profErr } = await supabase
+        .from("profiles").select("*").eq("id", userId).single();
+
+      // Profil henüz oluşturulmamışsa kısa bekle ve tekrar dene (signup race condition)
+      if (profErr && profErr.code === "PGRST116") {
+          await new Promise(r => setTimeout(r, 1000));
+        const retry = await supabase.from("profiles").select("*").eq("id", userId).single();
+        prof = retry.data;
+        profErr = retry.error;
+      }
+
+
+      if (prof && prof.name) {
         if (prof.favorites) setFavorites(prof.favorites);
-        setUserProfile(p=>({...p, ...prof, id: userId,
-          name: prof.name || userEmail?.split("@")[0] || "",
-          email: prof.email || userEmail || "",
-        }));
+        const newProfile = {
+          id: userId,
+          name:      prof.name,
+          email:     prof.email || userEmail || "",
+          phone:     prof.phone || "",
+          city:      prof.city || "",
+          state:     prof.state || "",
+          avatar:    prof.avatar || "👤",
+          photo_url: prof.photo_url || null,
+          reviewCount: 0, bizCount: 0,
+        };
+        localStorage.setItem("pusula_profile", JSON.stringify(newProfile));
+        setUserProfile(p => ({ ...p, ...newProfile }));
       } else {
-        setUserProfile(p=>({...p, id: userId,
-          name: userEmail?.split("@")[0] || "",
+        const fallbackName = userEmail?.split("@")[0] || "";
+        await supabase.from("profiles").upsert({
+          id: userId, name: fallbackName, email: userEmail || "",
+        });
+        setUserProfile(p => ({
+          ...p, id: userId,
+          name:  fallbackName,
           email: userEmail || "",
         }));
       }
-      const { data: bizArr } = await supabase.from("businesses").select("*").eq("owner_id", userId);
+
+      const { data: bizArr } = await supabase.from("businesses").select("*").eq("owner_id", userId).order("created_at", { ascending: false }).limit(1);
       const myBiz = bizArr?.[0] || null;
-      if (myBiz) setMyBusiness({...myBiz, cat:myBiz.category, desc:myBiz.description,
-        img: categories.find(c=>c.id===myBiz.category)?.icon||"🏢",
-        onaylı: myBiz.featured, rating: myBiz.rating||0, reviews: myBiz.reviews||0, tags: myBiz.tags||[]});
+      if (myBiz) setMyBusiness({
+        ...myBiz, cat: myBiz.category, desc: myBiz.description,
+        img: categories.find(c => c.id === myBiz.category)?.icon || "🏢",
+        onaylı: myBiz.featured, rating: myBiz.rating || 0,
+        reviews: myBiz.reviews || 0, tags: myBiz.tags || [],
+      });
       else setMyBusiness(null);
+
       const { data: evts } = await supabase.from("events").select("*").eq("owner_id", userId);
-      setMyEvents(evts ? evts.map(e=>({...e, cat:e.category, img:"🎉", attendees:0})) : []);
+      setMyEvents(evts ? evts.map(e => ({...e, cat: e.category, img: "🎉", attendees: 0})) : []);
     };
 
-    // Açılışta mevcut session'ı kontrol et
-    supabase.auth.getSession().then(async ({ data: { session } }) => {
-      if (session?.user) {
-        setLoggedIn(true);
-        await loadUserData(session.user.id, session.user.email);
-      }
-    });
-
-    // Auth değişikliklerini dinle
-    const { data: { subscription } } = supabase.auth.onAuthStateChange(async (event, session) => {
+    // Tek noktadan auth yönetimi
+    // ÖNEMLİ: onAuthStateChange içinde await ile Supabase sorgusu yapma — deadlock olur!
+    const { data: { subscription } } = supabase.auth.onAuthStateChange((event, session) => {
       if (event === "SIGNED_OUT") {
+        loadedUserId = null;
+        localStorage.removeItem("pusula_profile");
         setLoggedIn(false);
         setUserProfile({ id:null, name:"", avatar:"👤", city:"", state:"", email:"", phone:"", reviewCount:0, bizCount:0 });
         setMyBusiness(null);
@@ -4925,9 +5273,15 @@ useEffect(() => {
         setTab("home");
         return;
       }
-      if (session?.user) {
+      if ((event === "SIGNED_IN" || event === "INITIAL_SESSION" || event === "TOKEN_REFRESHED") && session?.user) {
         setLoggedIn(true);
-        await loadUserData(session.user.id, session.user.email);
+        if (!signupInProgress.current) {
+          // setTimeout ile callback dışına çıkar — deadlock önlenir
+          setTimeout(() => {
+            loadUserData(session.user.id, session.user.email).catch(err => {
+            });
+          }, 0);
+        }
       }
     });
 
@@ -4943,12 +5297,8 @@ useEffect(() => {
 
   const [reviews, setReviews] = useState([]);
 
-  const [userProfile, setUserProfile] = useState({
-    id:null, name:"", avatar:"👤", city:"", state:"", email:"", phone:"",
-    reviewCount:0, bizCount:0,
-  });
-  const [myBusiness, setMyBusiness] = useState(null);
-const [myEvents, setMyEvents] = useState([]);
+
+const signupInProgress = useRef(false);
 const [editingEvent, setEditingEvent] = useState(null);
 const [rsvpEvents, setRsvpEvents] = useState([]);
 const [selectedEventFromProfile, setSelectedEventFromProfile] = useState(null);
@@ -4974,11 +5324,12 @@ const [selectedEventFromProfile, setSelectedEventFromProfile] = useState(null);
       business_id: r.bizId,
       user_id: user?.id || null,
       user_name: r.user,
+      user_avatar: userProfile.photo_url || null,
       rating: r.rating,
       comment: r.text,
     });
 
-    setReviews(prev=>[r,...prev]);
+    setReviews(prev=>[{...r, user_id: user?.id, avatar: userProfile.photo_url || r.avatar || "👤"},...prev]);
     setUserProfile(p=>({...p, reviewCount:(p.reviewCount||0)+1}));
     const biz = businesses.find(b=>b.id===r.bizId);
     setNotifications(prev=>[
@@ -4992,8 +5343,17 @@ const [selectedEventFromProfile, setSelectedEventFromProfile] = useState(null);
 
   const handleAuth = profile => {
     if (profile.state) setUserState(profile.state);
+    setLoggedIn(true);
+    setUserProfile(prev => ({
+      ...prev,
+      id:     profile.id     || prev.id,
+      name:   profile.name   || prev.name,
+      email:  profile.email  || prev.email,
+      avatar: profile.avatar || prev.avatar || "👤",
+      state:  profile.state  || prev.state,
+      city:   profile.city   || prev.city,
+    }));
     setScreen("main");
-    // onAuthStateChange SIGNED_IN eventi otomatik tetiklenip loadUserData'yı çağıracak
   };
 
   // FIX 2: Arama geçmişi temizle düzeltildi
@@ -5033,6 +5393,7 @@ const [selectedEventFromProfile, setSelectedEventFromProfile] = useState(null);
       phone: form.phone,
       description: form.description,
       tags: form.tags ? form.tags.split(",").map(t=>t.trim()).filter(Boolean) : [],
+      nationwide: form.nationwide || false,
       owner_id: user?.id || null,
     }).select().single();
 
@@ -5041,11 +5402,15 @@ const [selectedEventFromProfile, setSelectedEventFromProfile] = useState(null);
       title: form.title,
       company: form.company,
       location: `${form.location}, ${form.state}`,
+      state: form.state,
       type: form.type,
+      description: form.description || "",
       tags: form.tags ? form.tags.split(",").map(t=>t.trim()).filter(Boolean) : [],
       phone: form.phone,
+      owner_id: user?.id || null,
       posted: "Az önce",
       urgent: false,
+      nationwide: form.nationwide || false,
     };
     setExtraJobs(prev=>[newJob,...prev]);
     setNotifications(prev=>[
@@ -5086,22 +5451,44 @@ const [selectedEventFromProfile, setSelectedEventFromProfile] = useState(null);
       }
     }
 
-    const { data, error } = await supabase.from("businesses").insert({
-      name: form.name,
-      category: form.category,
-      state: form.state,
-      city: form.city,
-      tags: form.tags ? form.tags.split(",").map(t=>t.trim()).filter(Boolean) : [],
-      verified: false,
-      featured: false,
-      phone: form.phone,
-      address: `${form.address}, ${form.city}, ${form.state} ${form.zip}`,
-      description: form.description,
-      hours: form.hours.map(h=>({ open:h.open, from:h.from, to:h.to })),
-      image_url: imageUrl,
-      gallery_urls: galleryUrls,
-      owner_id: user?.id || null,
-    }).select().single();
+    // Kullanıcının zaten işletmesi var mı kontrol et
+    const existingId = myBusiness?.id || null;
+    let data, error;
+    if (existingId) {
+      // Güncelle
+      ({ data, error } = await supabase.from("businesses").update({
+        name: form.name,
+        category: form.category,
+        state: form.state,
+        city: form.city,
+        tags: form.tags ? form.tags.split(",").map(t=>t.trim()).filter(Boolean) : [],
+        phone: form.phone,
+        address: `${form.address}, ${form.city}, ${form.state} ${form.zip}`,
+        description: form.description,
+        hours: form.hours.map(h=>({ open:h.open, from:h.from, to:h.to })),
+        ...(imageUrl && { image_url: imageUrl }),
+        ...(galleryUrls.length && { gallery_urls: galleryUrls }),
+      }).eq("id", existingId).select().single());
+    } else {
+      // Yeni kayıt
+      ({ data, error } = await supabase.from("businesses").insert({
+        name: form.name,
+        category: form.category,
+        state: form.state,
+        city: form.city,
+        tags: form.tags ? form.tags.split(",").map(t=>t.trim()).filter(Boolean) : [],
+        verified: false,
+        featured: false,
+        phone: form.phone,
+        address: `${form.address}, ${form.city}, ${form.state} ${form.zip}`,
+        description: form.description,
+        hours: form.hours.map(h=>({ open:h.open, from:h.from, to:h.to })),
+        image_url: imageUrl,
+        gallery_urls: galleryUrls,
+        nationwide: form.nationwide || false,
+        owner_id: user?.id || null,
+      }).select().single());
+    }
 
     const newBiz = {
       id: data?.id || Date.now(),
@@ -5125,14 +5512,18 @@ const [selectedEventFromProfile, setSelectedEventFromProfile] = useState(null);
     };
 
     setMyBusiness(newBiz);
-    setUserProfile(p=>({...p, bizCount:(p.bizCount||0)+1}));
+    // dbBusinesses'ı da güncelle — BusinessDetail senkron kalsın
+    if (existingId) {
+      setDbBusinesses(prev => prev.map(b => b.id === existingId ? {...b, ...newBiz} : b));
+    } else {
+      setDbBusinesses(prev => [...prev, newBiz]);
+      setUserProfile(p=>({...p, bizCount:(p.bizCount||0)+1}));
+    }
     setNotifications(prev=>[
-      { icon:"⏳", title:`"${form.name}" incelemeye alındı`, body:"24 saat içinde onaylanacak.", time:"Az önce", read:false },
+      { icon:"⏳", title:`"${form.name}" ${existingId?"güncellendi":"incelemeye alındı"}`, body:existingId?"Değişiklikler kaydedildi.":"24 saat içinde onaylanacak.", time:"Az önce", read:false },
       ...prev
     ]);
     setScreen("main");
-    // Yeni işletmeyi listeye ekle
-    setDbBusinesses(prev=>[...prev, newBiz]);
   };
 
   const W = ({children}) => (
@@ -5147,8 +5538,8 @@ const [selectedEventFromProfile, setSelectedEventFromProfile] = useState(null);
 
   // Full-screen routes
   // FIX: Onboarding artık eyalet+şehir alıyor
-  if (screen==="onboarding")  return <W><Onboarding onDone={st=>{ setUserState(st); localStorage.setItem("pusula_onboarded","1"); setScreen("main"); }}/></W>;
-  if (screen==="auth")        return <W><AuthScreen onAuth={handleAuth} onBack={()=>setScreen("main")}/></W>;
+  if (screen==="onboarding")  return <W><Onboarding onDone={st=>{ const [st2,ct2]=Array.isArray(st)?st:[st,""]; setUserState(st2); setUserCity(ct2); localStorage.setItem("pusula_state",st2); localStorage.setItem("pusula_city",ct2||""); localStorage.setItem("pusula_onboarded","1"); setScreen("main"); }}/></W>;
+  if (screen==="auth")        return <W><AuthScreen onAuth={handleAuth} onBack={()=>setScreen("main")} signupRef={signupInProgress}/></W>;
   if (screen==="register")    return <W><RegisterBusiness onBack={()=>setScreen("main")} onSuccess={handleRegisterBiz}/></W>;
   if (screen==="editprofile") return <W><EditProfile profile={userProfile} onBack={()=>setScreen("main")} onSave={p=>{setUserProfile(p);setScreen("main");}}/></W>;
   if (screen==="postjob")     return <W><PostJob onBack={()=>setScreen("main")} onSuccess={(form)=>{ addJob(form); setSubScreen("jobs"); setScreen("main"); }} userName={userProfile.name}/></W>;
@@ -5165,10 +5556,10 @@ const [selectedEventFromProfile, setSelectedEventFromProfile] = useState(null);
     else if (n.icon==="⏳" || n.icon==="🏢") setScreen("bizprofile");
   }}/></W>;
   if (screen==="admin")       return <W><AdminPanel onBack={()=>setScreen("main")} pendingBiz={pendingBiz}/></W>;
-  if (screen==="bizprofile")  return <W><BusinessOwnerProfile business={myBusiness||businesses[0]} onBack={()=>setScreen("main")} reviews={reviews} onEdit={()=>setScreen("register")}/></W>;
+  if (screen==="bizprofile" && myBusiness)  return <W><BusinessOwnerProfile business={myBusiness} onBack={()=>setScreen("main")} reviews={reviews} onEdit={()=>setScreen("register")} onUpdate={(upd)=>{ setMyBusiness(p=>({...p,...upd})); setDbBusinesses(prev=>prev.map(b=>b.id===myBusiness?.id?{...b,...upd}:b)); }}/></W>;
   if (viewUser)               return <W><UserProfilePage user={viewUser} reviews={reviews} onBack={()=>setViewUser(null)}/></W>;
 
-  if (subScreen==="jobs")   return <W><Jobs   onBack={()=>setSubScreen(null)} onPost={loggedIn?()=>setScreen("postjob"):()=>setScreen("auth")} extraJobs={[...extraJobs,...dbJobs]}/></W>;
+  if (subScreen==="jobs")   return <W><Jobs   onBack={()=>setSubScreen(null)} onPost={loggedIn?()=>setScreen("postjob"):()=>setScreen("auth")} extraJobs={[...extraJobs,...dbJobs]} userState={userState} currentUserId={userProfile?.id||null} onEditJob={(job)=>{ setScreen("postjob"); }}/></W>;
   if (editingEvent)          return <W><EventEditScreen event={editingEvent} onBack={()=>setEditingEvent(null)} onSave={(updated)=>{
     if(updated){
       setMyEvents(prev=>prev.map(e=>e.id===updated.id?{...e,...updated}:e));
@@ -5179,19 +5570,20 @@ const [selectedEventFromProfile, setSelectedEventFromProfile] = useState(null);
     }
     setEditingEvent(null);
   }}/></W>;
-  if (subScreen==="events") return <W><Events onBack={()=>setSubScreen(null)} onPost={loggedIn?()=>setScreen("postevent"):()=>setScreen("auth")} dbEvents={dbEvents} rsvpList={rsvpEvents} onRsvpChange={setRsvpEvents} initialEvent={selectedEventFromProfile} onClearInitial={()=>setSelectedEventFromProfile(null)} currentUserId={userProfile?.id} onEditEvent={(ev)=>setEditingEvent(ev)}/></W>;
+  if (subScreen==="events") return <W><Events onBack={()=>setSubScreen(null)} onPost={loggedIn?()=>setScreen("postevent"):()=>setScreen("auth")} dbEvents={dbEvents} rsvpList={rsvpEvents} onRsvpChange={setRsvpEvents} initialEvent={selectedEventFromProfile} onClearInitial={()=>setSelectedEventFromProfile(null)} currentUserId={userProfile?.id || null} onEditEvent={(ev)=>setEditingEvent(ev)} userState={userState}/></W>;
 
   if (business) return (
     <W>
       <BusinessDetail
         business={business} onBack={goBackBusiness}
         favorites={favorites} toggleFav={toggleFav}
-        reviews={reviews} onAddReview={loggedIn?addReview:()=>setScreen("auth")}
+        reviews={reviews} onAddReview={loggedIn?addReview:()=>setScreen("auth")} onUpdateReview={(bizId,userId,updated)=>{ setReviews(prev=>prev.map(r=>(r.bizId===bizId&&r.user_id===userId)?{...r,...updated}:r)); }}
         onReport={()=>setReportModal({type:"business"})}
         onReportReview={()=>setReportModal({type:"review"})}
         onViewUser={setViewUser}
         onBusiness={openBusiness}
         isOwner={myBusiness && myBusiness.id===business.id}
+        userProfile={userProfile}
         lang={lang}
               dbBusinesses={dbBusinesses}
               dbJobs={dbJobs}
@@ -5220,7 +5612,7 @@ const [selectedEventFromProfile, setSelectedEventFromProfile] = useState(null);
               onNotifications={()=>setScreen("notifications")} unreadCount={unreadCount}
               searchHistory={searchHistory} onAddSearchHistory={addSearchHistory}
               onClearHistory={clearSearchHistory}
-              onLocationChange={(st,ct)=>{ setUserState(st); setUserCity(ct); }}
+              onLocationChange={(st,ct)=>{ setUserState(st); setUserCity(ct); localStorage.setItem("pusula_state",st); localStorage.setItem("pusula_city",ct); }}
               lang={lang}
               dbBusinesses={dbBusinesses}
               dbJobs={dbJobs}
@@ -5243,7 +5635,14 @@ dbEvents={[...events, ...dbEvents]}
               lang={lang} onLangChange={setLang}
               onAdmin={()=>setScreen("admin")}
               onLogout={async()=>{
-                await supabase.auth.signOut();
+                          try {
+                  localStorage.removeItem("pusula_profile");
+                  localStorage.removeItem("pusula_state");
+                  localStorage.removeItem("pusula_city");
+                  await supabase.auth.signOut();
+                } catch (err) {
+                }
+                // signOut başarılı olsa da olmasa da state'i temizle
                 setLoggedIn(false);
                 setUserProfile({ id:null, name:"", avatar:"👤", city:"", state:"", email:"", phone:"", reviewCount:0, bizCount:0 });
                 setMyBusiness(null);
